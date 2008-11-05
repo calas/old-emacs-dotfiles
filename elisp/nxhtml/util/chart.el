@@ -446,8 +446,7 @@ be a list
                                      (unless (eq state 'need-label)
                                        (throw 'problems (format "Unexpected end, state=%s" state)))
                                    (throw 'problems
-                                          (error-message-string
-                                                     "%s" err)))))))
+                                          (error-message-string err)))))))
                    (message "token=%s, label=%s, state=%s" token current-label state)
                    (when (and want-pos-state
                               (>= (point) want-pos-state))

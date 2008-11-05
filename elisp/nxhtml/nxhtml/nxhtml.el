@@ -5,8 +5,8 @@
 
 ;; Author:  Lennart Borgman <lennart DOT borgman DOT 073 AT student DOT lu DOT se>
 ;; Created: 2005-08-05
-(defconst nxhtml:version "1.36") ;;Version:
-;; Last-Updated: 2008-08-01T20:04:10+0200 Fri
+;;(defconst nxhtml:version "1.45") ;;Version:
+;; Last-Updated: 2008-08-18T19:22:33+0200 Mon
 ;; Keywords: languages
 ;;
 ;;
@@ -76,8 +76,14 @@
 
 (eval-when-compile
   (require 'cl)
-  (unless (featurep 'nxml-nxhtml-autostart)
-    (let ((efn (expand-file-name "../autostart.el"))) (load efn))
+  (unless (featurep 'nxhtml-autostart)
+    (let ((efn (expand-file-name
+                "../autostart.el"
+                (file-name-directory
+                 (if load-file-name
+                     load-file-name
+                   (buffer-file-name))))))
+      (load efn))
     (require 'rng-valid)
     (require 'rng-nxml)
     (require 'html-toc nil t)
@@ -130,7 +136,7 @@
                          "hexcolor.el" "0.51")
            (fold-dwim    "Folding on headers and tags"
                          "fold-dwim.el" "1.3")
-           (appmenu      "Popup menu"
+           (appmenu      "General popup menu"
                          "appmenu.el" "0.53")
            (appmenu-fold "Popup menu entries for folding"
                          "appmenu-fold.el" "0.51" appmenu fold-dwim)
@@ -138,8 +144,8 @@
                          "nxml-where.el" "0.52")
            (mlinks       "Live XHTML links"
                          "mlinks.el" "0.28")
-           (nxhtml-strval "Allow attr=\"<?php...?>\" etc"
-                         "nxhtml-strval.el" "0.3")
+;;;            (nxhtml-strval "Allow attr=\"<?php...?>\" etc"
+;;;                          "nxhtml-strval.el" "0.3")
            (as-external  "Emacs as an external editor"
                          "as-external.el" "0.5")
            (gimp         "Edit images with GIMP"
@@ -148,6 +154,16 @@
                          "html-imenu.el" "0.9")
            (tabkey2      "Tab completion"
                          "tabkey2.el" "1.12")
+           (udev         "Fetch and load from elisp repostories"
+                         "udev.el" "0.5")
+           (udev-cedet   "CEDET fetcher and loader"
+                         "udev-cedet.el" "0.2")
+           (udev-ecb     "ECB fetcher and loader"
+                         "udev-ecb.el" "0.2")
+           (udev-rinari  "Rinari fetcher and loader"
+                         "udev-rinari.el" "0.2")
+           (majmodpri    "Major mode priorities"
+                         "majmodpri.el" "0.5")
            )
          ))
     (dolist (extf req-features)
@@ -224,15 +240,14 @@
     ok))
 
 (defun nxhtml-features-check ()
-  "Check if external modules used by `nxhtml-mode' are found.
-See this function for more information."
+  "Check if external modules used by nXhtml are found."
   (interactive)
   (switch-to-buffer-other-window (get-buffer-create "*nXhtml Optional Features Check*") t)
   (help-mode)
   (setq buffer-read-only t)
   (let ((inhibit-read-only t))
     (erase-buffer)
-    (let ((s (concat "Elisp modules used by Nxhtml Mode version " nxhtml-menu:version ":")))
+    (let ((s (concat "Elisp modules used by nXhtml version " nxhtml-menu:version ":")))
       (put-text-property 0 (length s)
                          'face '( :weight bold :height 1.4)
                          s)
@@ -240,7 +255,7 @@ See this function for more information."
     (dolist (feat-entry nxhtml-req-features)
       (nxhtml-feature-check feat-entry nil))
     (goto-char (point-min))
-    (while (search-forward-regexp "[-a-zA-Z]+\\.el" nil t)
+    (while (search-forward-regexp "[-a-zA-Z0-9]+\\.el" nil t)
       (nxhtml-make-library-link
        (match-beginning 0)
        (match-end 0)))

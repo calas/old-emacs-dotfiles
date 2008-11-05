@@ -10,7 +10,7 @@
 ;; Modified: 2008-01-25T22:25:26+0100 Fri
 ;; X-URL:   http://php-mode.sourceforge.net/
 
-(defconst php-mode-version-number "1.4.1a-nxhtml"
+(defconst php-mode-version-number "1.4.1d-nxhtml"
   "PHP Mode version number.")
 
 ;;; License
@@ -71,6 +71,19 @@
 
 ;;; Changelog:
 
+;; 1.4.1d-nxhtml
+;;   Move back point after checking indentation in
+;;   `php-check-html-for-indentation'.
+;;
+;; 1.4.1c-nxhtml
+;;   Add `c-at-vsemi-p-fn' etc after advice from Alan Mackenzi.
+;;
+;; 1.4.1b-nxhtml
+;;   Remove php-mode-to.
+;;   Make the indentation check only on current line.
+;;   Warn only once per session about indentation.
+;;   Tell if can't complete in `php-complete-function'.
+;;
 ;; 1.4.1a-nxhtml
 ;;   Made underscore be part of identifiers.
 ;;
@@ -176,29 +189,15 @@ You can replace \"en\" with your ISO language code."
   :group 'php)
 
 ;;;###autoload
-(defcustom php-mode-to-use
-  (progn
-    (require 'mumamo nil t)
-    (if (fboundp 'nxhtml-mumamo-turn-on)
-        'nxhtml-mumamo-turn-on
-      (if (fboundp 'html-mumamo-turn-on)
-          'html-mumamo-turn-on
-        'php-mode)))
-  "Major mode turn on function to use for php files."
-  :type 'function
-  :group 'php)
-
-;;;###autoload
 (defcustom php-file-patterns '("\\.php[s34]?\\'" "\\.phtml\\'" "\\.inc\\'")
   "List of file patterns for which to automatically invoke `php-mode'."
   :type '(repeat (regexp :tag "Pattern"))
-  :set-after '(php-mode-to-use)
   :set (lambda (sym val)
          (set-default sym val)
          (let ((php-file-patterns-temp val))
            (while php-file-patterns-temp
              (add-to-list 'auto-mode-alist
-                          (cons (car php-file-patterns-temp) php-mode-to-use))
+                          (cons (car php-file-patterns-temp) 'php-mode))
              (setq php-file-patterns-temp (cdr php-file-patterns-temp)))))
   :group 'php)
 
@@ -269,21 +268,27 @@ See `php-beginning-of-defun'."
   "Obarray of tag names defined in current tags table and functions know to PHP.")
 
 (defvar php-warned-bad-indent nil)
-(make-variable-buffer-local 'php-warned-bad-indent)
+;;(make-variable-buffer-local 'php-warned-bad-indent)
 
 ;; Do it but tell it is not good if html tags in buffer.
 (defun php-check-html-for-indentation ()
   (let ((html-tag-re "</?\\sw+.*?>")
         (here (point)))
-    (if (not (or (re-search-forward html-tag-re (+ (point) 1000) t)
-                 (re-search-backward html-tag-re (- (point) 1000) t)))
-        t
+    (goto-char (line-beginning-position))
+    (if (or (when (boundp 'mumamo-multi-major-mode) mumamo-multi-major-mode)
+            ;; Fix-me: no idea how to check for mmm or multi-mode
+            (save-match-data
+              (not (or (re-search-forward html-tag-re (line-end-position) t)
+                       (re-search-backward html-tag-re (line-beginning-position) t)))))
+        (progn
+          (goto-char here)
+          t)
       (goto-char here)
       (setq php-warned-bad-indent t)
       ;;(setq php-warned-bad-indent nil)
-      (let* ((known-multi-libs '(("mumamo" mumamo-multi-major-mode)
-                                 ("mmm-mode" mmm-mode)
-                                 ("multi-mode" multi-mode)))
+      (let* ((known-multi-libs '(("mumamo" mumamo (lambda () (nxhtml-mumamo)))
+                                 ("mmm-mode" mmm-mode (lambda () (mmm-mode 1)))
+                                 ("multi-mode" multi-mode (lambda () (multi-mode 1)))))
              (known-names (mapcar (lambda (lib) (car lib)) known-multi-libs))
              (available-multi-libs (delq nil
                                          (mapcar
@@ -293,11 +298,11 @@ See `php-beginning-of-defun'."
              (available-names (mapcar (lambda (lib) (car lib)) available-multi-libs))
              (base-msg
               (concat
-               "Indentation fails badly with mixed HTML/PHP in plaín\n"
-               "`php-mode'.  To get indentation to work you must use an Emacs\n"
-               "library that supports 'multiple major modes' in a buffer.  Parts\n"
-               "of the buffer will then be in `php-mode' and parts in for example\n"
-               "`html-mode'.  Known such libraries are:\n\t"
+               "Indentation fails badly with mixed HTML/PHP in the HTML part in
+plaín `php-mode'.  To get indentation to work you must use an
+Emacs library that supports 'multiple major modes' in a buffer.
+Parts of the buffer will then be in `php-mode' and parts in for
+example `html-mode'.  Known such libraries are:\n\t"
                (mapconcat 'identity known-names ", ")
                "\n"
                (if available-multi-libs
@@ -328,12 +333,12 @@ See `php-beginning-of-defun'."
                                            '(available-names . 1)
                                            )))
                        (mode (when name
-                               (cadr (assoc name available-multi-libs)))))
+                               (caddr (assoc name available-multi-libs)))))
                   (when mode
                     ;; Minibuffer window is more than one line, fix that first:
                     (message "")
                     (load name)
-                    (funcall mode 1))))
+                    (funcall mode))))
             (lwarn 'php-indent :warning base-msg)))
         nil))))
 
@@ -346,6 +351,39 @@ See `php-beginning-of-defun'."
   (if (or php-warned-bad-indent
           (php-check-html-for-indentation))
       (funcall 'c-indent-line)))
+
+(defun php-c-at-vsemi-p (&optional pos)
+  "Return t on html lines (including php region border), otherwise nil.
+POS is a position on the line in question.
+
+This is was done due to the problem reported here:
+
+  URL `https://answers.launchpad.net/nxhtml/+question/43320'"
+  (setq pos (or pos (point)))
+  (let ((here (point))
+        ret)
+  (save-match-data
+    (goto-char pos)
+    (beginning-of-line)
+    (setq ret (looking-at
+               (rx
+                (or (seq
+                     bol
+                     (0+ space)
+                     "<"
+                     (in "a-z\\?"))
+                    (seq
+                     (0+ anything)
+                     (in "a-z\\?")
+                     ">"
+                     (0+ space)
+                     eol))))))
+  (goto-char here)
+  ret))
+
+(defun php-c-vsemi-status-unknown-p ()
+  "See `php-c-at-vsemi-p'."
+  )
 
 ;;;###autoload
 (define-derived-mode php-mode c-mode "PHP"
@@ -430,6 +468,8 @@ See `php-beginning-of-defun'."
   (setq indent-line-function 'php-cautious-indent-line)
   (setq indent-region-function 'php-cautious-indent-region)
   (setq c-special-indent-hook nil)
+  (setq c-at-vsemi-p-fn 'php-c-at-vsemi-p)
+  (setq c-vsemi-status-unknown-p 'php-c-vsemi-status-unknown-p)
 
   (set (make-local-variable 'syntax-begin-function)
        'c-beginning-of-syntax)
@@ -475,23 +515,24 @@ for \\[find-tag] (which see)."
         completion
         (php-functions (php-completion-table)))
     (if (not pattern) (message "Nothing to complete")
-        (search-backward pattern)
-        (setq beg (point))
-        (forward-char (length pattern))
-        (setq completion (try-completion pattern php-functions nil))
-        (cond ((eq completion t))
-              ((null completion)
-               (message "Can't find completion for \"%s\"" pattern)
-               (ding))
-              ((not (string= pattern completion))
-               (delete-region beg (point))
-               (insert completion))
-              (t
-               (message "Making completion list...")
-               (with-output-to-temp-buffer "*Completions*"
-                 (display-completion-list
-                  (all-completions pattern php-functions)))
-               (message "Making completion list...%s" "done"))))))
+        (if (not (search-backward pattern nil t))
+            (message "Can't complete here")
+          (setq beg (point))
+          (forward-char (length pattern))
+          (setq completion (try-completion pattern php-functions nil))
+          (cond ((eq completion t))
+                ((null completion)
+                 (message "Can't find completion for \"%s\"" pattern)
+                 (ding))
+                ((not (string= pattern completion))
+                 (delete-region beg (point))
+                 (insert completion))
+                (t
+                 (message "Making completion list...")
+                 (with-output-to-temp-buffer "*Completions*"
+                   (display-completion-list
+                    (all-completions pattern php-functions)))
+                 (message "Making completion list...%s" "done")))))))
 
 ;; Build php-completion-table on demand.  The table includes the
 ;; PHP functions and the tags from the current tags-file-name

@@ -1,0 +1,5 @@
+#name : build Model
+# --
+build ${1:Model} do |attributes|
+  attributes.reverse_merge!($0)
+end

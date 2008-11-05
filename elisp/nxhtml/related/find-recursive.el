@@ -35,49 +35,45 @@
 ;; - Tried to fix bugs I introduced when trying to make code platform
 ;;   independent.
 
-(eval-when-compile
-  (require 'cl))
+(error "this is broken, use find-files-in-project.el instead")
+(eval-when-compile (require 'cl))
 
 (defcustom find-recursive-exclude-files '(".*.class$" ".*~$" ".*.elc$")
   "List of regular expressions of files to be excluded when recursively searching for files."
   :type '(repeat (string :tag "File regexp")))
 
 (defun find-file-recursively (file-regexp directory)
-  (interactive "sFile name to search for recursively: \nDIn directory: ")
+  (interactive "sFile name regexp to search for recursively: \nDIn directory: ")
   (let ((directory (file-name-as-directory directory))
         (matches
          (find-recursive-filter-out
           find-recursive-exclude-files
-          (find-recursive-directory-relative-files directory "" file-regexp))))
+          (find-recursive-directory-relative-files directory directory file-regexp))))
     (cond ((eq (length matches) 0) (message "No file(s) found!"))
           ((eq (length matches) 1)
-           (find-file (concat directory (car matches))))
+           (find-file (expand-file-name (car matches) directory)))
           (t
-;;;            (run-with-timer 0.01 nil
-;;;                            (lambda ()
-;;;                              (dispatch-event
-;;;                               (make-event 'key-press '(key tab)))))
            (isearch-unread 'tab) (isearch-unread 'tab)
            (let ((file (completing-read "Choose file: "
                                         (mapcar 'list matches)
                                         nil t)))
              (if (or (eq file nil) (equal file ""))
                  (message "No file selected.")
-                  (find-file (concat directory file))))))))
+               (find-file (expand-file-name file directory))))))))
 
 (defun find-recursive-directory-relative-files (directory
                                                 relative-directory
                                                 file-regexp)
   (let* ((directory (file-name-as-directory directory))
-         (relative-directory
-          (if (string= "" relative-directory)
-              ""
-            (file-name-as-directory relative-directory)))
+         (relative-directory (file-name-as-directory relative-directory))
          (full-dir (concat directory relative-directory))
          (matches
           (mapcar
            (function (lambda (x)
-                       (concat relative-directory x)))
+                       ;;(concat relative-directory x)
+                       (file-relative-name
+                        (expand-file-name x directory)
+                        relative-directory)))
            (find-recursive-filter-out '(nil)
                                       (find-recursive-directory-files full-dir nil
                                                                       file-regexp nil t))))
@@ -86,8 +82,10 @@
            (function
             (lambda (dir)
               (find-recursive-directory-relative-files directory
-                                                       (concat relative-directory
-                                                               (file-name-as-directory dir))
+                                                       ;;(concat relative-directory (file-name-as-directory dir))
+                                                       (file-relative-name
+                                                        (expand-file-name dir directory)
+                                                        relative-directory)
                                                        file-regexp)))
            (find-recursive-filter-out '(nil "\\." "\\.\\.")
                                       (find-recursive-directory-files full-dir nil ".*"
@@ -122,23 +120,33 @@ neither nil nor t, then return only subdirectories."
   (if find-recursive-running-xemacs
       (directory-files dirname full match nosort files-only)
     (setq dirname (file-name-as-directory dirname))
-    (cond ((null files-only)
-           (directory-files dirname full match nosort))
-          ((eq files-only t)
-           (remq nil
-                 (mapcar (lambda (f)
-                           (if (file-directory-p
-                                (concat dirname f))
-                               nil
-                             f))
-                         (directory-files dirname full match nosort))))
-          (t
-           (remq nil
-                 (mapcar (lambda (f)
-                           (if (not (file-directory-p
-                                     (concat dirname f)))
-                               nil
-                             f))
-                         (directory-files dirname full match nosort)))))))
+    (let ((default-directory dirname))
+      (cond ((null files-only)
+             (directory-files dirname full match nosort))
+            ((eq files-only t)
+             (remq nil
+                   (mapcar (lambda (f)
+                             (if (file-directory-p f)
+                                 nil
+                               f))
+                           (directory-files dirname full match nosort))))
+            (t
+             (remq nil
+                   (mapcar (lambda (f)
+                             (if (not (file-directory-p f))
+                                 nil
+                               f))
+                           (directory-files dirname full match nosort))))))))
+
+(defvar find-cached-filenames nil)
+(length find-cached-filenames)
+
+;;(find-cache-filenames "c:/emacsW32/nxhtml/tests/")
+(defun find-cache-filenames (root)
+  (let ((files
+         ;;(find-recursive-directory-files root nil)
+         (find-recursive-directory-relative-files root "" nil)
+         ))
+    (setq find-cached-filenames files)))
 
 (provide 'find-recursive)

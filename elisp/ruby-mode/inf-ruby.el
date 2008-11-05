@@ -1,7 +1,7 @@
 ;;; -*-Emacs-Lisp-*-
 ;;;
-;;;  $Id: inf-ruby.el 14912 2008-01-06 15:49:38Z akr $
-;;;  $Author: akr $
+;;;  $Id$
+;;;  $Author$
 ;;;
 ;;; Inferior Ruby Mode - ruby process in a buffer.
 ;;;                      adapted from cmuscheme.el

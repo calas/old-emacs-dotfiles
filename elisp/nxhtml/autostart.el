@@ -46,25 +46,35 @@
 (unless (fboundp 'define-globalized-minor-mode)
   (defalias 'define-globalized-minor-mode 'define-global-minor-mode))
 
-(unless (featurep 'nxml-nxhtml-autostart)
-  (provide 'nxml-nxhtml-autostart)
+(defvar nxhtml-install-dir
+  (file-name-directory (if load-file-name load-file-name buffer-file-name))
+  "Installation directory for nXhtml.")
+
+(unless (featurep 'nxhtml-autostart)
+  ;; Provide the feature to avoid loading looping on error.
+  (provide 'nxhtml-autostart)
   ;; Use the css-mode that comes with Emacs if there is one.
   ;; Fix-me: remove this loading later:
   (when (fboundp 'css-mode) (require 'css-mode))
-  (let* ((this-dir (file-name-directory
-                    (if load-file-name load-file-name buffer-file-name)))
-         (util-dir (file-name-as-directory
+  (let* ((util-dir (file-name-as-directory
                     (expand-file-name "util"
-                                      this-dir)))
+                                      nxhtml-install-dir)))
          (related-dir (file-name-as-directory
                        (expand-file-name "related"
-                                      this-dir))))
+                                         nxhtml-install-dir))))
     (add-to-list 'load-path util-dir)
     (add-to-list 'load-path related-dir)
     ;; Use the nxml-mode that comes with Emacs if available:
     (unless (fboundp 'nxml-mode)
-      (load (expand-file-name "nxml-mode-20041004/rng-auto" this-dir)))
-    (load (expand-file-name "nxhtml/nxhtml-autoload" this-dir))))
+      (load (expand-file-name "nxml-mode-20041004/rng-auto"
+                              nxhtml-install-dir)))
+    ;; Patch the rnc include paths
+    (load-file (expand-file-name "etc/schema/schema-path-patch.el"
+                                 nxhtml-install-dir))
+    (rncpp-patch-xhtml-loader)
+    ;; Load nXhtml
+    (load (expand-file-name "nxhtml/nxhtml-autoload"
+                            nxhtml-install-dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; autostart.el ends here

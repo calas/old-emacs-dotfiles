@@ -1,6 +1,6 @@
 ;;
 ;; .emacs --- My personal Emacs startup script
-;; 
+;;
 ;; Made By Jorge Calás Lozano.
 ;; Email   <calas@qvitta.net>
 ;;
@@ -63,7 +63,7 @@
 ;; Frame title bar formatting to show full path of file
 (setq-default
  frame-title-format
- (list '((buffer-file-name " %f" (dired-directory 
+ (list '((buffer-file-name " %f" (dired-directory
                                   dired-directory
                                   (revert-buffer-function " %b"
                                   ("%b - Dir:  " default-directory)))))))
@@ -130,6 +130,9 @@
 
 (global-set-key (kbd "C-c b") 'browse-url)
 
+;; delete trailing whitespace before save
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
 ;; ido-mode
 (setq ido-use-filename-at-point t)
 (ido-mode t)
@@ -148,9 +151,15 @@
 (add-to-list 'load-path "~/.emacs.d/elisp/ri-emacs")
 (add-to-list 'load-path "~/.emacs.d/elisp/yaml-mode")
 (add-to-list 'load-path "~/.emacs.d/elisp/rinari")
+(add-to-list 'load-path "~/.emacs.d/elisp/rinari/util")
 (add-to-list 'load-path "~/.emacs.d/elisp/git-emacs")
 (add-to-list 'load-path "~/.emacs.d/elisp/haml-mode")
 (add-to-list 'load-path "~/.emacs.d/elisp/emacs-wget")
+(add-to-list 'load-path "~/.emacs.d/elisp/ecb")
+(add-to-list 'load-path "~/.emacs.d/elisp/cedet/common")
+(add-to-list 'load-path "~/.emacs.d/elisp/erlang")
+(add-to-list 'load-path "~/.emacs.d/elisp/distel/elisp")
+
 ;; add more here as needed
 
 ;; emacs-wget
@@ -190,13 +199,6 @@
 ;;
 ;; svn co http://svn.ruby-lang.org/repos/ruby/trunk/misc/ ~/.emacs.d/elisp/ruby-mode
 (autoload 'ruby-mode "ruby-mode" "Mode for editing ruby source files" t)
-(setq auto-mode-alist (append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
-(setq interpreter-mode-alist (append '(("ruby" . ruby-mode)) interpreter-mode-alist))
-
-;; add file types to ruby-mode
-;; (add-to-list 'auto-mode-alist '("\.treetop$" . ruby-mode))
-(add-to-list 'auto-mode-alist '("Rakefile" . ruby-mode))
-(add-to-list 'auto-mode-alist '("\.rake$" . ruby-mode))
 
 ;; inf-ruby
 (autoload 'run-ruby "inf-ruby" "Run an inferior Ruby process")
@@ -231,19 +233,32 @@
 ;;
 ;; Read http://groups.google.com/group/emacs-on-rails/browse_thread/thread/dfaa224905b51487
 ;; http://rubyforge.iasi.roedu.net/files/ruby-debug/ruby-debug-extra-0.10.1.tar.gz (wget)
-(require 'rdebug)
+;; (require 'rdebug)
 
 ;; rinari
 ;; http://github.com/eschulte/rinari
 (require 'rinari)
-(global-set-key (kbd "C-x C-M-f") 'find-file-in-project)
+(require 'rinari-camps)
+
+(global-set-key (kbd "C-x C-M-f") 'rinari-find-file-in-project)
 (setq rinari-browse-url-func 'browse-url-generic)
+
+(setq auto-mode-alist (append '(("\\.rb$" . ruby-mode)) auto-mode-alist))
+(setq interpreter-mode-alist (append '(("ruby" . ruby-mode)) interpreter-mode-alist))
+;; add file types to ruby-mode
+;; (add-to-list 'auto-mode-alist '("\.treetop$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("Rakefile" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\.rake$" . ruby-mode))
 
 ;; use exuberant-ctags
 ;;
 ;; Generate file with:
 ;;   ctags-exuberant -a -e -f TAGS --tag-relative -R app lib vendor
 (setq rinari-tags-file-name "TAGS")
+
+;; autotest support
+;; http://www.emacswiki.org/cgi-bin/emacs/download/autotest.el (wget)
+(require 'autotest)
 
 ;; nXhtml
 ;; http://ourcomments.org/Emacs/nXhtml/doc/nxhtml.html
@@ -336,6 +351,23 @@
 ;; (modify-coding-system-alist 'file "\\.po\\'\\|\\.po\\."
 ;; 			    'po-find-file-coding-system)
 
+;; CEDET
+(load-file "~/.emacs.d/elisp/cedet/common/cedet.el")
+
+;; ECB
+;;
+;; Emacs code browser
+;; http://ecb.sourceforge.net
+(require 'ecb)
+
+;; Erlang mode
+(require 'erlang-start)
+
+;; Distel
+;; erlang interactive mode
+(require 'distel)
+(distel-setup)
+
 ;; keep scrolling in compilation result buffer
 (setq compilation-scroll-output t)
 
@@ -360,6 +392,7 @@
 	("_spec\\.rb$"          .       "spec %f")
 	("\\.rb$"               .       "ruby %f")
 	("\\.pl$"               .       "perl %f")
+	("\\.js"                .       "jsl -process %f")
         (emacs-lisp-mode        .       (emacs-lisp-byte-compile))
         (html-mode              .       (browse-url-of-buffer))
         (html-helper-mode       .       (browse-url-of-buffer))
@@ -368,6 +401,21 @@
         (asy-mode               .       (call-interactively 'asy-compile-view))
         (muse-mode              .       (call-interactively 'muse-project-publish))))
 (global-set-key (kbd "<f9>") 'smart-compile)
+
+(defun rinari-generate-tags()
+  (interactive)
+  (let ((my-tags-file (concat (rinari-root) "TAGS"))
+	(root (rinari-root)))
+    (message "Regenerating TAGS file: %s" my-tags-file)
+    (if (file-exists-p my-tags-file)
+	(delete-file my-tags-file))
+    (shell-command
+     (format "find %s -regex \".+rb$\" | xargs ctags-exuberant -a -e -f %s"
+	     root my-tags-file))
+    (if (get-file-buffer my-tags-file)
+	 (kill-buffer (get-file-buffer my-tags-file)))
+    (visit-tags-table my-tags-file)))
+;; (add-hook 'rinari-minor-mode-hook 'rinari-generate-tags)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CUSTOMIZATIONS FILE ;;

@@ -226,7 +226,7 @@
 
 ;;; Code:
 
-(require 'cl)
+(eval-when-compile (require 'cl))
 
 (defgroup snippet nil
   "Insert a template with fields that con contain optional defaults."

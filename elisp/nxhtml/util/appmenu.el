@@ -4,7 +4,7 @@
 
 ;; Author:  Lennart Borgman <lennart DOT borgman DOT 073 AT student DOT lu DOT se>
 ;; Created: Thu Jan 05 14:00:26 2006
-(defconst appmenu:version "0.61") ;; Version:
+(defconst appmenu:version "0.62") ;; Version:
 ;; Last-Updated: 2008-06-15T17:54:40+0200 Sun
 ;; Keywords:
 ;; Compatibility:
@@ -26,10 +26,12 @@
 ;;; Change log:
 ;;
 ;; Version 0.61:
-;; - Removed support for minor and major menus.
-;; - Added support for text and overlay keymaps.
-;; - Added customization options.
+;; - Remove support for minor and major menus.
+;; - Add support for text and overlay keymaps.
+;; - Add customization options.
 ;;
+;; Version 0.62:
+;; - Fix problem with keymap at point.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -143,13 +145,14 @@ DEFINITION as explained there."
         last-prefix
         this-prefix)
     (when point-map
-      (map-keymap (lambda (key fun)
-                    (when (and (symbolp fun)
-                               (fboundp fun)
-                               (not (memq fun appmenu-mouse-only))
-                               )
-                      (add-to-list 'funs fun)))
-                  point-map)
+      (let ((map-fun (lambda (key fun)
+                       (if (keymapp fun)
+                           (map-keymap map-fun fun)
+                         (when (and (symbolp fun)
+                                    (fboundp fun)
+                                    (not (memq fun appmenu-mouse-only)))
+                           (add-to-list 'funs fun))))))
+        (map-keymap map-fun point-map))
       (dolist (fun funs)
         (let ((desc (when fun (documentation fun))))
           (when desc
@@ -241,13 +244,14 @@ DEFINITION as explained there."
     (when is-mouse
       (goto-char (posn-point (event-start last-input-event)))
       (sit-for 0.01))
-    ;;(active-minibuffer-window)
-    (condition-case err
+    ;;active-minibuffer-window)
+    ;;(condition-case err
         (let ((menu (appmenu-map)))
           (if menu
               (popup-menu-at-point menu)
             (message "Appmenu is empty")))
-      (quit nil))))
+      ;;(quit nil))
+    ))
 
 (defvar appmenu-mode-map
   (let ((map (make-sparse-keymap)))

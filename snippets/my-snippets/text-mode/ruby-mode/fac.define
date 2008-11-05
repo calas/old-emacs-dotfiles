@@ -1,0 +1,5 @@
+#name : Factory define
+# --
+Factory.define ${1:factory_name} do |${2:item}|
+  $0
+end

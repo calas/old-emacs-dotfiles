@@ -50,7 +50,7 @@
 
 (eval-when-compile
   (require 'cl)
-  (unless (featurep 'nxml-nxhtml-autostart)
+  (unless (featurep 'nxhtml-autostart)
     (let ((efn (expand-file-name "../autostart.el")))
       (load efn))
     (require 'nxml-mode)))

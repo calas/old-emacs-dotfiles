@@ -82,16 +82,6 @@ When this mode is on the following keys are defined:
 
 (defun mumamo-test-create-chunk-at-point ()
   (interactive)
-;;;   (if (not mumamo-current-chunk-family)
-;;;       (mumamo-select-chunk-family)
-;;;     ;; Set it again if we changed something:
-;;;     (let* ((chunk-family-name (car mumamo-current-chunk-family))
-;;;            (chunk-family (assoc chunk-family-name mumamo-chunk-family-list)))
-;;;       (assert (stringp chunk-family-name))
-;;;       (assert chunk-family)
-;;;       (setq mumamo-current-chunk-family chunk-family)))
-;;;   (when mumamo-mode
-;;;     (mumamo-mode 0))
   (remove-hook 'post-command-hook 'mumamo-post-command t)
   (font-lock-mode -1)
   (setq fontification-functions nil)
@@ -106,21 +96,24 @@ When this mode is on the following keys are defined:
       (mumamo-save-buffer-state nil
         (setq chunk (mumamo-create-chunk-at here)))
       (setq chunk2 (mumamo-get-chunk-at here))
-      (message "mumamo-test-create-chunk-at-point.chunk 1=%s" chunk)
+      ;;(message "mumamo-test-create-chunk-at-point.chunk 1=%s" chunk)
       ;;(lwarn 'test-create-chunk-at :warning "chunk=%s, chunk2=%s" chunk chunk2)
-      (assert (eq chunk chunk2))
-      (message "mumamo-test-create-chunk-at-point.chunk 2=%s" chunk)
+      ;;(when (overlay-buffer chunk)
+        (assert (eq chunk chunk2))
+        ;;)
+      ;;(message "mumamo-test-create-chunk-at-point.chunk 2=%s" chunk)
       (syntax-ppss-flush-cache (1- (overlay-start chunk)))
       (let ((start (overlay-start chunk))
             (end   (overlay-end chunk)))
         ;;(setq syntax-ppss-last (cons 319 (parse-partial-sexp 1 1)))
-        (message "mumamo-test-create-chunk-at-point.chunk 2a=%s" chunk)
+        ;;(message "mumamo-test-create-chunk-at-point.chunk 2a=%s" chunk)
         (mumamo-save-buffer-state nil
           (mumamo-fontify-region-1 start end nil)))
-      (message "mumamo-test-create-chunk-at-point.chunk 3=%s" chunk)
+      ;;(message "mumamo-test-create-chunk-at-point.chunk 3=%s" chunk)
       (unless mumamo-test-mode (mumamo-test-mode 1))
-      (message "mumamo-test-create-chunk-at-point.chunk 4=%s" chunk)
+      ;;(message "mumamo-test-create-chunk-at-point.chunk 4=%s" chunk)
       chunk
+      ;;(message "test 2.debugger=%s" debugger)
       (mumamo-get-chunk-at here))))
 
 (defun mumamo-test-create-chunks-at-all-points ()
@@ -130,7 +123,7 @@ When this mode is on the following keys are defined:
         this-ovl)
     (while (< (point) (point-max))
       (setq this-ovl (mumamo-test-create-chunk-at-point))
-      (message "this-ovl=%s" this-ovl)
+      ;;(message "this-ovl=%s" this-ovl)
       (sit-for 0.01)
       ;;(sit-for 0)
       (when last-ovl
@@ -252,7 +245,7 @@ When this mode is on the following keys are defined:
       (let ((debugger 'mumamo-debug)
             (debug-on-error t)
             (debug-on-signal t))
-        (message "here d")(sit-for 1)
+        ;;(message "here d")(sit-for 1)
         (mumamo-test-major-mode-init 'php-mode))
     (error (message "here 2 err=%S" err))))
 

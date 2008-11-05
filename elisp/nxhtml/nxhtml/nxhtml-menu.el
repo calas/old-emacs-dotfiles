@@ -2,8 +2,8 @@
 ;;
 ;; Author: Lennart Borgman (lennart O borgman A gmail O com)
 ;; Created: Sat Apr 21 13:49:41 2007
-(defconst nxhtml-menu:version "1.36") ;;Version:
-;; Last-Updated: 2008-08-01T20:04:23+0200 Fri
+(defconst nxhtml-menu:version "1.59") ;;Version:
+;; Last-Updated: 2008-08-26T23:28:00+0200 Tue
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -125,8 +125,8 @@
   (let ((map (make-sparse-keymap "nxhtml-minor-mode-menu")))
 
     (let ((help-map (make-sparse-keymap)))
-      ;;(define-key help-map [nxhtml-run-tests]
-      ;;  (list 'menu-item "Run nXhtml Tests in this Emacs" 'mumamo-test-run-ert))
+      (define-key help-map [emacs-Q-nxhtml]
+        (list 'menu-item "Start 'emacs -Q' and load nXhtml" 'emacs-Q-nxhtml))
       (define-key help-map [nxhtmltest-run]
         (list 'menu-item "Run nXhtml Tests in Current Emacs" 'nxhtmltest-run))
       (define-key help-map [nxhtmltest-run-Q]
@@ -138,11 +138,11 @@
         (list 'menu-item "Check Optional Features" 'nxhtml-features-check))
       (define-key help-map [nxhtml-customize]
         (list 'menu-item "Customize nXhtml ..." 'nxhtml-customize))
-      (define-key help-map [nxhtml-quick-customize]
-        (list 'menu-item "Quick Customize nXhtml ..." 'nxhtml-quick-customize))
+;;;       (define-key help-map [nxhtml-quick-customize]
+;;;         (list 'menu-item "Quick Customize nXhtml ..." 'nxhtml-quick-customize))
       (define-key help-map [nxhtml-help-separator3] (list 'menu-item "--"))
-      (define-key help-map [nxhtml-help]
-        (list 'menu-item "nXhtml Help" 'nxhtml-help))
+;;;       (define-key help-map [nxhtml-help]
+;;;         (list 'menu-item "nXhtml Help" 'nxhtml-help))
       (define-key help-map [nxhtml-overview]
         (list 'menu-item (concat "nXhtml version " nxhtml-menu:version " Overview") 'nxhtml-overview))
       (define-key help-map [nxhtml-welcome]
@@ -175,13 +175,53 @@
                 :button '(:toggle . (and (boundp 'longlines-mode)
                                          longlines-mode))))
         )
-      (define-key tools-map [nxhtml-tidy-separator]
+      (define-key tools-map [nxhtml-ecb-separator]
         (list 'menu-item "--" nil))
+      (let ((ecb-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-ecb-map]
+          (list 'menu-item "ECB" ecb-map))
+        (define-key ecb-map [nxhtml-update-ecb]
+          (list 'menu-item "Fetch/update ECB dev sources"
+                'udev-ecb-update))
+        (define-key ecb-map [nxhtml-custom-ecb]
+          (list 'menu-item "Customize ECB dev startup"
+                (lambda () (interactive)
+                  (require 'udev-ecb)
+                  (customize-group-other-window 'udev-ecb))))
+        (define-key ecb-map [nxhtml-custom-important-ecb]
+          (list 'menu-item "Customize important ECB things"
+                (lambda () (interactive)
+                  (customize-group-other-window 'ecb-most-important))
+                :enable (featurep 'ecb)))
+        )
+      ;;(define-key tools-map [nxhtml-cedet-separator] (list 'menu-item "--" nil))
+      (let ((cedet-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-cedet-map]
+          (list 'menu-item "CEDET" cedet-map))
+        (define-key cedet-map [nxhtml-update-cedet]
+          (list 'menu-item "Fetch/update CEDET dev sources"
+                'udev-cedet-update))
+        (define-key cedet-map [nxhtml-custom-cedet]
+          (list 'menu-item "Customize CEDET dev startup"
+                (lambda () (interactive)
+                  (require 'udev-cedet)
+                  (customize-group-other-window 'udev-cedet))))
+        )
+      (let ((rinari-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-rinari-map]
+          (list 'menu-item "Rinari" rinari-map))
+        (define-key rinari-map [nxhtml-update-rinari]
+          (list 'menu-item "Fetch/update Rinari dev sources"
+                'udev-rinari-update))
+        (define-key rinari-map [nxhtml-custom-rinari]
+          (list 'menu-item "Customize Rinari startup"
+                (lambda () (interactive)
+                  (require 'udev-rinari)
+                  (customize-group-other-window 'udev-rinari))))
+        )
       (let ((mozrepl-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-mozrepl-map]
           (list 'menu-item "MozRepl for Javascript" mozrepl-map
-              :enable '(and (boundp 'moz-minor-mode)
-                            moz-minor-mode)
               ))
         (define-key mozrepl-map [nxhtml-mozrepl-home-page]
           (list 'menu-item "MozLab/MozRepl Home Page"
@@ -191,7 +231,8 @@
         (define-key mozrepl-map [nxhtml-mozrepl-separator2]
           (list 'menu-item "--" nil))
         (define-key mozrepl-map [nxhtml-mozrepl-run-mozilla]
-          (list 'menu-item "Display/Start MozRepl Process" 'run-mozilla))
+          (list 'menu-item "Display/Start MozRepl Process" 'run-mozilla
+              :enable '(and (boundp 'moz-minor-mode) moz-minor-mode)))
         (define-key mozrepl-map [nxhtml-mozrepl-separator1]
           (list 'menu-item "--" nil))
         (define-key mozrepl-map [nxhtml-mozrepl-save-and-send]
@@ -199,13 +240,31 @@
                 :enable '(not mumamo-multi-major-mode)))
         (define-key mozrepl-map [nxhtml-mozrepl-send-defun-and-go]
           (list 'menu-item "Send Current Function, Go to MozRepl"
-                'moz-send-defun-and-go))
+                'moz-send-defun-and-go
+                :enable '(and (boundp 'moz-minor-mode) moz-minor-mode)))
         (define-key mozrepl-map [nxhtml-mozrepl-send-defun]
-          (list 'menu-item "Send Current Function" 'moz-send-defun))
+          (list 'menu-item "Send Current Function" 'moz-send-defun
+                :enable '(and (boundp 'moz-minor-mode) moz-minor-mode)))
         (define-key mozrepl-map [nxhtml-mozrepl-send-region]
           (list 'menu-item "Send the Region" 'moz-send-region
-                :enable 'mark-active))
+                :enable '(and mark-active
+                              (boundp 'moz-minor-mode) moz-minor-mode)))
         )
+      (define-key tools-map [nxhtml-majpri-separator]
+        (list 'menu-item "--" nil))
+      (let ((majpri-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-majpri-map]
+          (list 'menu-item "Major Modes Priorities" majpri-map))
+        (define-key majpri-map [nxhtml-majpri-act]
+          (list 'menu-item "Apply Major Modes Priorities"
+                'majmodpri-apply-priorities))
+        (define-key majpri-map [nxhtml-majpri-cust]
+          (list 'menu-item "Customize Major Mode Priorities"
+                (lambda () (interactive)
+                  (customize-group-other-window 'majmodpri))))
+        )
+      (define-key tools-map [nxhtml-tidy-separator]
+        (list 'menu-item "--" nil))
       (define-key tools-map [nxhtml-tidy-map]
         (list 'menu-item "Tidy XHTML" 'tidy-menu-symbol
               :filter 'nxhtml-insert-menu-dynamically
@@ -490,11 +549,14 @@
       (define-key site-map [nxhtml-site-separator] (list 'menu-item "--"))
       (define-key site-map [nxhtml-customize-site-list]
         (list 'menu-item "Edit Sites" (lambda () (interactive)
-                                        (customize-option 'html-site-list))))
-      (define-key site-map [nxhtml-dired-site-top]
-        (list 'menu-item "Dired Site" 'html-site-dired-current))
+                                        (customize-option-other-window 'html-site-list))))
       (define-key site-map [nxhtml-set-site]
         (list 'menu-item "Set Current Site" 'html-site-set-site))
+      (define-key site-map [nxhtml-site-separator-1] (list 'menu-item "--"))
+      (define-key site-map [nxhtml-dired-site-top]
+        (list 'menu-item "Dired Site" 'html-site-dired-current))
+      (define-key site-map [nxhtml-find-site-file]
+        (list 'menu-item "Find File in Site" 'html-site-find-file))
       )
 
     (define-key map [nxhtml-insert-separator]
@@ -521,9 +583,13 @@
 
     (let ((chunk-map (make-sparse-keymap)))
       (define-key map [nxhtml-chunk-map]
-        (list 'menu-item "Move by Chunk" chunk-map
+        (list 'menu-item "Chunk" chunk-map
               :visible `(not (derived-mode-p 'dired-mode))
               :enable 'mumamo-multi-major-mode))
+      (define-key chunk-map [mumamo-mark-chunk]
+        (list 'menu-item "Mark Chunk"
+              'mumamo-mark-chunk))
+      (define-key chunk-map [nxhtml-separator-mark-chunk] (list 'menu-item "--"))
       (define-key chunk-map [mumamo-backward-chunk]
         (list 'menu-item "Backward Chunk"
               'mumamo-backward-chunk))
@@ -665,7 +731,7 @@
         (list 'menu-item "--" nil
               :visible '(nxhtml-nxml-html-in-buffer)))
       (define-key cmpl-map [nxhtml-tab-complete]
-        (list 'menu-item "General Tab Completion" 'tabkey2-first))
+        (list 'menu-item "Indent and then Complete" 'tabkey2-first))
       )
 
     map))
@@ -826,72 +892,72 @@ See `nxhtml-minor-mode-modes'."
     (put-text-property 0 (length txt) 'mouse-face 'highlight txt)
     (widget-insert-link txt 'describe-function (list sym))))
 
-(defun nxhtml-quick-customize (&optional same-window)
-  "Show page for Quick Customize of nXhtml."
-  (interactive)
-  (require 'nxhtml)
-  (require 'custom)
-  (require 'cus-edit)
-  (if same-window
-      (switch-to-buffer "*Quick Customize nXhtml*")
-    (switch-to-buffer-other-window "*Quick Customize nXhtml*"))
-  (kill-all-local-variables)
-  (custom-mode)
-  (let ((inhibit-read-only t))
-    (erase-buffer))
-  (let ((sFound "found")
-        (sError "error"))
-    (put-text-property 0 (length sFound)
-                       'face '(bold
-                               (foreground-color . "green")) sFound)
-    (put-text-property 0 (length sError)
-                       'face '(bold
-                               (foreground-color . "red")) sError)
-    (let* (
-           (default-used "(not set yet - default used)")
-           )
-      (nxhtml-custom-h1 "Quick Customize for nXhtml" t)
-      (widget-insert "
+;; (defun nxhtml-quick-customize (&optional same-window)
+;;   "Show page for Quick Customize of nXhtml."
+;;   (interactive)
+;;   (require 'nxhtml)
+;;   (require 'custom)
+;;   (require 'cus-edit)
+;;   (if same-window
+;;       (switch-to-buffer "*Quick Customize nXhtml*")
+;;     (switch-to-buffer-other-window "*Quick Customize nXhtml*"))
+;;   (kill-all-local-variables)
+;;   (custom-mode)
+;;   (let ((inhibit-read-only t))
+;;     (erase-buffer))
+;;   (let ((sFound "found")
+;;         (sError "error"))
+;;     (put-text-property 0 (length sFound)
+;;                        'face '(bold
+;;                                (foreground-color . "green")) sFound)
+;;     (put-text-property 0 (length sError)
+;;                        'face '(bold
+;;                                (foreground-color . "red")) sError)
+;;     (let* (
+;;            (default-used "(not set yet - default used)")
+;;            )
+;;       (nxhtml-custom-h1 "Quick Customize for nXhtml" t)
+;;       (widget-insert "
 
-This page is for a quick and easy setup of some ")
-      (nxhtml-custom-url-link "nXhtml" (nxhtml-docfile-url))
-      (widget-insert " features
-that I did not want to turn on by default since they alter what
-happens when you open a file.  I suggest however that you turn
-them on since they are quite useful if you just understands what
-is happening.
+;; This page is for a quick and easy setup of some ")
+;;       (nxhtml-custom-url-link "nXhtml" (nxhtml-docfile-url))
+;;       (widget-insert " features
+;; that I did not want to turn on by default since they alter what
+;; happens when you open a file.  I suggest however that you turn
+;; them on since they are quite useful if you just understands what
+;; is happening.
 
-The values you set here are saved so that they will be used next
-time you start Emacs too.")
-      ;;(widget-insert-link "customize nXhtml" 'customize-group (list 'nxhtml))
-      (widget-insert "\n\n")
+;; The values you set here are saved so that they will be used next
+;; time you start Emacs too.")
+;;       ;;(widget-insert-link "customize nXhtml" 'customize-group (list 'nxhtml))
+;;       (widget-insert "\n\n")
 
-      (nxhtml-custom-insert-nxhtml-row 'nxhtml-global-minor-mode t "Show the nXhtml menu in all relevant buffers\n\t")
-      ;;(nxhtml-custom-insert-nxhtml-row 'mumamo-global-mode t "Turn on Multiple Major Mode in all relevant buffers\n\t")
-      ;;(nxhtml-custom-insert-nxhtml-row 'mlinks-global-mode t "Make link of lins, for example href=\"...\"\n\t")
-      (nxhtml-custom-insert-nxhtml-row 'indent-region-mode t "Use TAB to indent region when it is selected\n\t")
+;;       (nxhtml-custom-insert-nxhtml-row 'nxhtml-global-minor-mode t "Show the nXhtml menu in all relevant buffers\n\t")
+;;       ;;(nxhtml-custom-insert-nxhtml-row 'mumamo-global-mode t "Turn on Multiple Major Mode in all relevant buffers\n\t")
+;;       ;;(nxhtml-custom-insert-nxhtml-row 'mlinks-global-mode t "Make link of lins, for example href=\"...\"\n\t")
+;;       ;;(nxhtml-custom-insert-nxhtml-row 'indent-region-mode t "Use TAB to indent region when it is selected\n\t")
 
-      (widget-insert "\n")
-      (widget-insert-button " Turn them all on "
-                          (lambda ()
-                            (nxhtml-quick-all t)
-                            (nxhtml-quick-customize t))
-                          nil)
-      (widget-insert "  ")
-      (widget-insert-button " Turn them all off "
-                          (lambda ()
-                            (nxhtml-quick-all nil)
-                            (nxhtml-quick-customize t))
-                          nil)
-      (beginning-of-line)
-      )))
+;;       (widget-insert "\n")
+;;       (widget-insert-button " Turn them all on "
+;;                           (lambda ()
+;;                             (nxhtml-quick-all t)
+;;                             (nxhtml-quick-customize t))
+;;                           nil)
+;;       (widget-insert "  ")
+;;       (widget-insert-button " Turn them all off "
+;;                           (lambda ()
+;;                             (nxhtml-quick-all nil)
+;;                             (nxhtml-quick-customize t))
+;;                           nil)
+;;       (beginning-of-line)
+;;       )))
 
-(defun nxhtml-quick-all (on)
-  (custom-set-and-prepare-save 'nxhtml-global-minor-mode on)
-  ;;(custom-set-and-prepare-save 'mumamo-global-mode on)
-  (custom-set-and-prepare-save 'indent-region-mode on)
-  (when custom-file
-    (custom-save-all)))
+;; (defun nxhtml-quick-all (on)
+;;   (custom-set-and-prepare-save 'nxhtml-global-minor-mode on)
+;;   ;;(custom-set-and-prepare-save 'mumamo-global-mode on)
+;;   (custom-set-and-prepare-save 'indent-region-mode on)
+;;   (when custom-file
+;;     (custom-save-all)))
 
 (defun custom-set-and-prepare-save (symbol value)
   "Set SYMBOL to VALUE and add to customize.
@@ -913,62 +979,52 @@ Both the current value and the value to save is set, but
          (curwin (selected-window)))
     (switch-to-buffer-other-window bufnam)
     (unless oldbuf
-      (let ((inhibit-read-only t))
+      (let ((inhibit-read-only t)
+            (here (point)))
         (custom-mode)
         (setq cursor-in-non-selected-windows nil)
         (nxhtml-custom-h1 "Welcome to nXhtml - a package for web editing" t)
-        (insert "
-
-If you have not done it already it might be a good time to read
-the ")
+        (insert "\n\n")
+        (setq here (point))
+        (insert "If you have not done it already it might "
+                "be a good time to read at least The Quick Guide in the ")
         (nxhtml-custom-url-link "nXhtml overview" (nxhtml-docfile-url))
-        (insert " now.")
-
-        (insert "
-
-And oh, wait! If you are new to Emacs too you might want to take
-a quick ")
+        (insert " now.\n\n")
+        (fill-region here (point))
+        (setq here (point))
+        (insert "And oh, wait! If you are new to Emacs too you might want "
+                "to take a quick ")
         (nxhtml-custom-url-link
          "Emacs tour"
-         "http://stuff.mit.edu/iap/emacs/emacs-guided-tour-1.html")
+         "http://www.gnu.org/software/emacs/tour/")
+        (insert ".  And then perhaps the Emacs tutorial "
+                "(which is in the Help menu above).\n\n")
+        (fill-region here (point))
+        (setq here (point))
 
-        (insert ".  And then perhaps the Emacs tutorial (that
-one is in the Help menu above).")
+;;;         (insert "
 
+;;; To make the use of nXhtml as smooth as possible I also recommend
+;;; that you go to ")
 
-        (insert "
+;;;         (widget-insert-link "Quick Customize nXhtml"
+;;;                             (lambda ()
+;;;                               (nxhtml-quick-customize))
+;;;                             nil)
 
-To make the use of nXhtml as smooth as possible I also recommend
-that you go to ")
-
-        (widget-insert-link "Quick Customize nXhtml"
-                            (lambda ()
-                              (nxhtml-quick-customize))
-                            nil)
-
-        (insert " and follow the instructions
-there.")
+;;;         (insert " and follow the instructions
+;;; there.")
 
         (unless (nxhtml-skip-welcome)
-          (insert "
-
-Doing that will remove this message when you start Emacs. You can
-also just ")
+          (insert "Click to ")
           (widget-insert-link "remove this message"
                               (lambda ()
-;;                                 (custom-set-and-prepare-save
-;;                                  'nxhtml-skip-welcome t)
-;;                                 (custom-save-all)
-;;                                 (let ((s "The nXhtml Welcome message will not be shown any more."))
-;;                                   (put-text-property 0 (length s)
-;;                                                      'face '(:foreground "red")
-;;                                                      s)
-;;                                   (message s))
-                                (customize-option 'nxhtml-skip-welcome)
-                                )
+                                (customize-option 'nxhtml-skip-welcome))
                               nil)
-          (insert " at startup.  (This page is still
-available in the nXhtml menu, at the bottom.)"))
+          (insert " at startup.  (This page is still "
+                  "available in the nXhtml menu, at the bottom.)"))
+        (fill-region here (point))
+        (setq here (point))
         (goto-char (point-min))))
     (select-window curwin)))
 
@@ -984,7 +1040,8 @@ file using nxhtml-mode."
    (or nxhtml-skip-welcome
        (and nxhtml-global-minor-mode
             ;;mumamo-global-mode
-            indent-region-mode)))
+            ;;indent-region-mode
+            )))
 
 (defun nxhtml-say-welcome-unless-skip ()
   (unless (nxhtml-skip-welcome)

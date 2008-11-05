@@ -61,17 +61,19 @@
 (defun mumamo-chunk-attr=(pos min max attr= attr=is-regex attr-regex submode)
   "This should work similar to `mumamo-find-possible-chunk'.
 See `mumamo-chunk-style=' for an example of use."
-  ;; 1- for the case that pos is at the " before the attribute value.
   (mumamo-condition-case err
-      (progn
-        (goto-char (1- pos))
+      (save-match-data
+        (if (not attr=is-regex)
+            (goto-char (+ pos (length attr=)))
+          (goto-char pos)
+          (skip-chars-forward "a-zA-Z="))
         (let ((prev-attr= (if attr=is-regex
                               (re-search-backward attr= min t)
                             (search-backward attr= min t)))
               prev-attr-sure
               next-attr=
-              start
-              end
+              start start-border
+              end   end-border
               exc-mode
               borders
               exc-start-prev
@@ -83,7 +85,7 @@ See `mumamo-chunk-style=' for an example of use."
           (while (and prev-attr=
                       (not prev-attr-sure))
             (if (not (search-backward "<" min t))
-                (setq prev-attr-sure 'none)
+                (setq prev-attr= nil)
               (if (looking-at attr-regex)
                   (setq prev-attr-sure 'found)
                 (setq prev-attr= (if attr=is-regex
@@ -93,15 +95,26 @@ See `mumamo-chunk-style=' for an example of use."
 ;;;           (when (and prev-attr=
 ;;;                      (search-backward "<" min t))
 ;;;             (when (looking-at attr-regex)
-          (when (and prev-attr= (eq prev-attr-sure 'found))
+          (when prev-attr=
               (setq exc-start-prev (match-beginning 1))
-              (setq exc-end-prev   (match-end 1))
+              (setq exc-end-prev   (match-end 2))
               (when (<= exc-start-prev pos)
-                (if (>= pos exc-end-prev)
-                    (setq start exc-end-prev)
+;;;                 (if (>= pos exc-end-prev)
+;;;                     (setq start exc-end-prev)
+;;;                   (setq exc-mode submode)
+;;;                   (setq start exc-start-prev)
+;;;                   (setq end exc-end-prev))
+                (if (> pos exc-end-prev)
+                    (progn
+                      (setq start (+ (match-end 2) 1))
+                      ;;(setq start-border (+ (match-end 2) 2))
+                      )
                   (setq exc-mode submode)
-                  (setq start exc-start-prev)
-                  (setq end exc-end-prev))))
+                  (setq start (match-beginning 1))
+                  (setq start-border (match-beginning 2))
+                  (setq end (1+ (match-end 2)))
+                  (setq end-border (1- end)))
+                ))
             ;;)
           ;; find next change
           (unless end
@@ -119,26 +132,11 @@ See `mumamo-chunk-style=' for an example of use."
           (when start (assert (<= start pos) t))
           (when end   (assert (<= pos end) t))
           (goto-char pos)
-          ;;(list start end exc-mode t nil pos)))
-;;;           ;; fix-me: This is just an idea to fix the " problem
-;;;           (if exc-mode
-;;;               (progn
-;;;                 ;;(when start (setq start (1- start)))
-;;;                 ;;(when (< start 1) (setq start 1))
-;;;                 (when end   (setq end   (1+ end)))
-;;;                 (when (> end (buffer-size)) (setq end (buffer-size)))
-;;;                 (let* ((minb (when start (1+ start)))
-;;;                        (maxb (when end   (1- end))))
-;;;                   (setq borders (when (or minb maxb)
-;;;                                   (list minb maxb exc-mode)))))
-;;;             ;;(when start (setq start (1+ start)))
-;;;             ;;(when end   (setq end   (1- end)))
-;;;             (let* ((minb (when start (1+ start)))
-;;;                    (maxb (when end   (1- end))))
-;;;               (setq borders (when (or minb maxb)
-;;;                               (list minb maxb exc-mode)))))
-;;;           (setq borders nil)
-          (list start end exc-mode borders)))
+          (setq borders (list start-border end-border nil))
+          ;;(message "ret=%s" (list start end exc-mode borders))
+          (list start end exc-mode borders)
+          ;;nil
+          ))
     (error
      (mumamo-display-error 'mumamo-chunk-attr= "%s"
                            (error-message-string err)))))
@@ -487,13 +485,14 @@ See `mumamo-find-possible-chunk' for POS, MIN and MAX."
   (rx "<"
       (0+ (not (any ">")))
       space
-      "on"
-      (1+ (any "a-za-z"))
-      "="
+      (submatch
+       "on"
+       (1+ (any "a-za-z"))
+       "=")
       (0+ space)
       ?\"
       (submatch
-       "javascript:"
+       (opt "javascript:")
        (0+
         (not (any "\""))))
       ))
@@ -509,7 +508,7 @@ See `mumamo-find-possible-chunk' for POS, MIN and MAX."
   (rx "<"
       (0+ (not (any ">")))
       space
-      "style="
+      (submatch "style=")
       (0+ space)
       ?\"
       (submatch
@@ -653,38 +652,42 @@ This also covers inlined style and javascript."
 (defun mumamo-chunk-django4(pos min max)
   "Find {% comment %}.  Return range and `django-mode'.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
-  (mumamo-find-possible-chunk pos min max
-                              'mumamo-search-bw-exc-start-django4
-                              'mumamo-search-bw-exc-end-django4
-                              'mumamo-search-fw-exc-start-django4
-                              'mumamo-search-fw-exc-end-django4))
+  (mumamo-quick-static-chunk pos min max "{% comment %}" "{% endcomment %}" t 'django-comment-mode t))
+;;;   (mumamo-find-possible-chunk pos min max
+;;;                               'mumamo-search-bw-exc-start-django4
+;;;                               'mumamo-search-bw-exc-end-django4
+;;;                               'mumamo-search-fw-exc-start-django4
+;;;                               'mumamo-search-fw-exc-end-django4))
 
 (defun mumamo-chunk-django3(pos min max)
   "Find {# ... #}.  Return range and `django-mode'.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
-  (mumamo-find-possible-chunk pos min max
-                              'mumamo-search-bw-exc-start-django3
-                              'mumamo-search-bw-exc-end-django3
-                              'mumamo-search-fw-exc-start-django3
-                              'mumamo-search-fw-exc-end-django3))
+  (mumamo-quick-static-chunk pos min max "{#" "#}" t 'django-comment-mode t))
+;;;   (mumamo-find-possible-chunk pos min max
+;;;                               'mumamo-search-bw-exc-start-django3
+;;;                               'mumamo-search-bw-exc-end-django3
+;;;                               'mumamo-search-fw-exc-start-django3
+;;;                               'mumamo-search-fw-exc-end-django3))
 
 (defun mumamo-chunk-django2(pos min max)
   "Find {{ ... }}.  Return range and `django-mode'.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
-  (mumamo-find-possible-chunk pos min max
-                              'mumamo-search-bw-exc-start-django2
-                              'mumamo-search-bw-exc-end-django2
-                              'mumamo-search-fw-exc-start-django2
-                              'mumamo-search-fw-exc-end-django2))
+  (mumamo-quick-static-chunk pos min max "{{" "}}" t 'django-variable-mode t))
+;;;   (mumamo-find-possible-chunk pos min max
+;;;                               'mumamo-search-bw-exc-start-django2
+;;;                               'mumamo-search-bw-exc-end-django2
+;;;                               'mumamo-search-fw-exc-start-django2
+;;;                               'mumamo-search-fw-exc-end-django2))
 
 (defun mumamo-chunk-django (pos min max)
   "Find {% ... %}.  Return range and `django-mode'.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
-  (mumamo-find-possible-chunk pos min max
-                              'mumamo-search-bw-exc-start-django
-                              'mumamo-search-bw-exc-end-django
-                              'mumamo-search-fw-exc-start-django
-                              'mumamo-search-fw-exc-end-django))
+  (mumamo-quick-static-chunk pos min max "{%" "%}" t 'django-mode t))
+;;;   (mumamo-find-possible-chunk pos min max
+;;;                               'mumamo-search-bw-exc-start-django
+;;;                               'mumamo-search-bw-exc-end-django
+;;;                               'mumamo-search-fw-exc-start-django
+;;;                               'mumamo-search-fw-exc-end-django))
 
 (defun mumamo-search-bw-exc-start-django (pos min)
   "Helper for `mumamo-chunk-django'.
@@ -708,7 +711,7 @@ POS is where to start search and MIN is where to stop."
   (let ((exc-start (mumamo-chunk-start-bw-str-inc pos min "{#")))
     (and exc-start
          (<= exc-start pos)
-         (cons exc-start 'django-mode))))
+         (cons exc-start 'django-comment-mode))))
 
 (defun mumamo-search-bw-exc-start-django4(pos min)
   "Helper for `mumamo-chunk-django4'.
@@ -717,7 +720,7 @@ POS is where to start search and MIN is where to stop."
                                                        "{% comment %}")))
     (and exc-start
          (<= exc-start pos)
-         (cons exc-start 'django-mode))))
+         (cons exc-start 'django-comment-mode))))
 
 (defun mumamo-search-bw-exc-end-django (pos min)
   "Helper for `mumamo-chunk-django'.
@@ -934,35 +937,7 @@ This also covers inlined style and javascript."
 (defun mumamo-chunk-jsp (pos min max)
   "Find <% ... %>.  Return range and 'java-mode.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
-  (mumamo-find-possible-chunk pos min max
-                              'mumamo-search-bw-exc-start-jsp
-                              'mumamo-search-bw-exc-end-jsp
-                              'mumamo-search-fw-exc-start-jsp
-                              'mumamo-search-fw-exc-end-jsp))
-
-(defun mumamo-search-bw-exc-start-jsp (pos min)
-  "Helper for `mumamo-chunk-jsp'.
-POS is where to start search and MIN is where to stop."
-  (let ((exc-start (mumamo-chunk-start-bw-str pos min "<%")))
-    (when (and exc-start
-               (<= exc-start pos))
-      (cons exc-start 'java-mode))))
-
-(defun mumamo-search-bw-exc-end-jsp (pos min)
-  "Helper for `mumamo-chunk-jsp'.
-POS is where to start search and MIN is where to stop."
-  (mumamo-chunk-end-bw-str pos min "%>"))
-
-(defun mumamo-search-fw-exc-start-jsp (pos max)
-  "Helper for `mumamo-chunk-jsp'.
-POS is where to start search and MAX is where to stop."
-  (let ((end-out (mumamo-chunk-start-fw-str pos max "<%")))
-    end-out))
-
-(defun mumamo-search-fw-exc-end-jsp (pos max)
-  "Helper for `mumamo-chunk-jsp'.
-POS is where to start search and MAX is where to stop."
-  (mumamo-chunk-end-fw-str pos max "%>"))
+  (mumamo-quick-static-chunk pos min max "<%" "%>" t 'java-mode t))
 
 ;;;###autoload
 (define-mumamo-multi-major-mode jsp-html-mumamo
@@ -988,19 +963,14 @@ This also covers inlined style and javascript."
   "Find <% ... %>.  Return range and 'ruby-mode.
 See `mumamo-find-possible-chunk' for POS, MIN and MAX."
   (mumamo-quick-static-chunk pos min max "<%" "%>" t 'ruby-mode t))
-;;;   (mumamo-find-possible-chunk pos min max
-;;;                               'mumamo-search-bw-exc-start-ruby
-;;;                               'mumamo-search-bw-exc-end-jsp
-;;;                               'mumamo-search-fw-exc-start-jsp
-;;;                               'mumamo-search-fw-exc-end-jsp))
 
-(defun mumamo-search-bw-exc-start-ruby (pos min)
-  "Helper for `mumamo-chunk-ruby'.
-POS is where to start search and MIN is where to stop."
-  (let ((exc-start (mumamo-chunk-start-bw-str pos min "<%")))
-    (when (and exc-start
-               (<= exc-start pos))
-      (cons exc-start 'ruby-mode))))
+;; (defun mumamo-search-bw-exc-start-ruby (pos min)
+;;   "Helper for `mumamo-chunk-ruby'.
+;; POS is where to start search and MIN is where to stop."
+;;   (let ((exc-start (mumamo-chunk-start-bw-str pos min "<%")))
+;;     (when (and exc-start
+;;                (<= exc-start pos))
+;;       (cons exc-start 'ruby-mode))))
 
 ;;;###autoload
 (define-mumamo-multi-major-mode eruby-mumamo
@@ -1600,6 +1570,35 @@ See `mumamo-find-possible-chunk' for POS, MIN and MAX."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; TT
+
+
+
+;; (setq auto-mode-alist
+;;       (append '(("\\.tt2?$" . tt-mode))  auto-mode-alist ))
+
+;;(require 'tt-mode)
+(defun mumamo-chunk-tt (pos min max)
+  "Find [% ... %], return range and `tt-mode'.
+See `mumamo-find-possible-chunk' for POS, MIN and MAX.
+
+This is for Template Toolkit.
+See URL `http://dave.org.uk/emacs/' for `tt-mode'."
+  (mumamo-quick-static-chunk pos min max "[%" "%]" t 'tt-mode nil))
+
+(define-mumamo-multi-major-mode tt-html-mumamo
+  "Turn on multiple major modes for TT files with main mode `nxhtml-mode'.
+This also covers inlined style and javascript."
+    ("TT HTML Family" html-mode
+     (mumamo-chunk-tt
+      mumamo-chunk-inlined-style
+      mumamo-chunk-inlined-script
+      mumamo-chunk-style=
+      mumamo-chunk-onjs=
+     )))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Asp
 
 (defun mumamo-chunk-asp (pos min max)
@@ -1730,6 +1729,241 @@ sub chunks."
     ("Org Mode + Html" org-mode
      (mumamo-chunk-org-html
       )))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Mako
+
+;; See http://www.makotemplates.org/docs/syntax.html
+
+;;; Comments mode
+;; Fix-me: move to mumamo.el
+(defconst mumamo-comment-font-lock-keywords
+  (list
+   (cons "\\(.*\\)" (list 1 font-lock-comment-face))
+   ))
+(defvar mumamo-comment-font-lock-defaults
+  '(mumamo-comment-font-lock-keywords t t))
+
+(define-derived-mode mumamo-comment-mode nil "Comment chunk"
+  "For comment blocks."
+  (set (make-local-variable 'font-lock-defaults) mumamo-comment-font-lock-defaults))
+
+
+
+(defun mumamo-chunk-mako-<% (pos min max)
+  "Find <% ... %> and <%! ... %>. Return range and `python-mode'.
+See `mumamo-find-possible-chunk' for POS, MIN and MAX."
+  (mumamo-find-possible-chunk pos min max
+                              'mumamo-mako-<%-bw-start
+                              'mumamo-mako-<%-bw-end
+                              'mumamo-mako-<%-fw-start
+                              'mumamo-mako-<%-fw-end
+                              'mumamo-mako-<%-find-borders
+                              ))
+(defun mumamo-mako-<%-find-borders (start end exc-mode)
+  (when exc-mode
+    (list
+     (when start
+       (+ start
+          (if (eq ?! (char-after (+ start 2)))
+              3
+            2)))
+     (when end (- end 2))
+     exc-mode)))
+
+(defun mumamo-mako-<%-bw-start (pos min)
+  (let ((here (point))
+        start
+        ret
+        )
+    (goto-char (+ pos 3))
+    (setq start (re-search-backward "<%!?\\(?:[ \t]\\|$\\)" min t))
+    (when (and start (<= start pos))
+      (setq ret (list start 'python-mode)))
+    (goto-char here)
+    ret))
+(defun mumamo-mako-<%-bw-end (pos min)
+  (mumamo-chunk-end-bw-str-inc pos min "%>")) ;; ok
+(defun mumamo-mako-<%-fw-start (pos max)
+  (let ((here (point))
+        start
+        ret)
+    (goto-char pos)
+    (setq start
+          (re-search-forward "<%!?\\(?:[ \t]\\|$\\)" max t))
+    (when start
+      (setq ret (match-beginning 0)))
+    (goto-char here)
+    ret))
+(defun mumamo-mako-<%-fw-end (pos max)
+  (mumamo-chunk-end-fw-str-inc pos max "%>")) ;; ok
+
+
+
+(defun mumamo-chunk-mako-% (pos min max)
+  "Find % python EOL.  Return range and `python-mode'.
+See `mumamo-find-possible-chunk' for POS, MIN and MAX."
+  (mumamo-whole-line-chunk pos min max "%" 'python-mode))
+
+(defun mumamo-chunk-mako-one-line-comment (pos min max)
+  "Find ## comment EOL.  Return range and `python-mode'.
+See `mumamo-find-possible-chunk' for POS, MIN and MAX."
+  (mumamo-whole-line-chunk pos min max "##" 'mumamo-comment-mode))
+
+;; Fix-me: Move this to mumamo.el
+(defun mumamo-whole-line-chunk (pos min max marker mode)
+  (let ((here (point))
+        (len-marker (length marker))
+        beg
+        end
+        ret)
+    (goto-char pos)
+    (setq beg (line-beginning-position))
+    (setq end (line-end-position))
+    (unless (or (when min (< beg min))
+                (when max (> end max))
+                (= pos end))
+      (goto-char beg)
+      (skip-chars-forward " \t")
+      (when (and
+             (string= marker (buffer-substring-no-properties (point) (+ (point) len-marker)))
+             (memq (char-after (+ (point) len-marker))
+                   '(?\  ?\t ?\n))
+             (>= pos (point)))
+        (setq ret
+              (list (point)
+                    end
+                    mode
+                    (let ((start-border (+ (point) len-marker)))
+                      (list start-border nil))))))
+    (unless ret
+      (let ((range-regexp
+             (concat "^[ \t]*"
+                     "\\("
+                     (regexp-quote marker)
+                     "[ \t\n].*\\)$")))
+        ;; Backward
+        (goto-char pos)
+        (unless (= pos (line-end-position))
+          (goto-char (line-beginning-position)))
+        (setq beg (re-search-backward range-regexp min t))
+        (when beg (setq beg (match-end 1)))
+        ;; Forward, take care of indentation part
+        (goto-char pos)
+        (unless (= pos (line-end-position))
+          (goto-char (line-beginning-position)))
+        (setq end (re-search-forward range-regexp max t))
+        (when end (setq end (match-beginning 1))))
+      (setq ret (list beg end)))
+    (goto-char here)
+    ;;(setq ret nil)
+    ret))
+
+;; (defun mumamo-single-regexp-chunk (pos min max begin-mark end-mark mode)
+;;   "Not ready yet. `mumamo-quick-static-chunk'"
+;;   (let ((here (point))
+;;         (len-marker (length marker))
+;;         beg
+;;         end
+;;         ret)
+;;     (goto-char pos)
+;;     (setq beg (line-beginning-position))
+;;     (setq end (line-end-position))
+;;     (unless (or (when min (< beg min))
+;;                 (when max (> end max))
+;;                 (= pos end))
+;;       (goto-char beg)
+;;       (skip-chars-forward " \t")
+;;       (when (and
+;;              (string= marker (buffer-substring-no-properties (point) (+ (point) len-marker)))
+;;              (memq (char-after (+ (point) len-marker))
+;;                    '(?\  ?\t ?\n))
+;;              (>= pos (point)))
+;;         (setq ret
+;;               (list (point)
+;;                     end
+;;                     mode
+;;                     (let ((start-border (+ (point) len-marker)))
+;;                       (list start-border nil))))))
+;;     (unless ret
+;;       (let ((range-regexp
+;;              (concat "^[ \t]*"
+;;                      "\\("
+;;                      (regexp-quote marker)
+;;                      "[ \t\n].*\\)$")))
+;;         ;; Backward
+;;         (goto-char pos)
+;;         (unless (= pos (line-end-position))
+;;           (goto-char (line-beginning-position)))
+;;         (setq beg (re-search-backward range-regexp min t))
+;;         (when beg (setq beg (match-end 1)))
+;;         ;; Forward, take care of indentation part
+;;         (goto-char pos)
+;;         (unless (= pos (line-end-position))
+;;           (goto-char (line-beginning-position)))
+;;         (setq end (re-search-forward range-regexp max t))
+;;         (when end (setq end (match-beginning 1))))
+;;       (setq ret (list beg end)))
+;;     (goto-char here)
+;;     ;;(setq ret nil)
+;;     ret))
+
+
+(defun mumamo-chunk-mako-<%doc (pos min max)
+  (mumamo-quick-static-chunk pos min max "<%doc>" "</%doc>" t 'mumamo-comment-mode t))
+
+(defun mumamo-chunk-mako-<%include (pos min max)
+  (mumamo-quick-static-chunk pos min max "<%include" "/>" t 'html-mode t))
+
+(defun mumamo-chunk-mako-<%inherit (pos min max)
+  (mumamo-quick-static-chunk pos min max "<%inherit" "/>" t 'html-mode t))
+
+(defun mumamo-chunk-mako-<%namespace (pos min max)
+  (mumamo-quick-static-chunk pos min max "<%namespace" "/>" t 'html-mode t))
+
+(defun mumamo-chunk-mako-<%page (pos min max)
+  (mumamo-quick-static-chunk pos min max "<%page" "/>" t 'html-mode t))
+
+(defun mumamo-chunk-mako$(pos min max)
+  "Find ${ ... }, return range and `python-mode'.
+See `mumamo-find-possible-chunk' for POS, MIN and MAX."
+  (mumamo-quick-static-chunk pos min max "${" "}" t 'python-mode t))
+
+;;;###autoload
+(define-mumamo-multi-major-mode mako-html-mumamo
+  "Turn on multiple major modes for Mako with main mode `html-mode'.
+This also covers inlined style and javascript."
+;; Fix-me: test case
+;;
+;; Fix-me: Add chunks for the tags, but make sure these are made
+;; invisible to nxml-mode parser.
+;;
+;; Fix-me: Maybe finally add that indentation support for one-line chunks?
+  ("Mako HTML Family" html-mode
+   (
+    mumamo-chunk-mako-one-line-comment
+    mumamo-chunk-mako-<%doc
+    mumamo-chunk-mako-<%include
+    mumamo-chunk-mako-<%inherit
+    mumamo-chunk-mako-<%namespace
+    mumamo-chunk-mako-<%page
+
+    ;;mumamo-chunk-mako-<%def
+    ;;mumamo-chunk-mako-<%call
+    ;;mumamo-chunk-mako-<%text
+
+    mumamo-chunk-mako-<%
+    mumamo-chunk-mako-%
+    mumamo-chunk-mako$
+
+    mumamo-chunk-xml-pi
+    mumamo-chunk-inlined-style
+    mumamo-chunk-inlined-script
+    mumamo-chunk-style=
+    mumamo-chunk-onjs=
+    )))
+
 
 (provide 'mumamo-fun)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

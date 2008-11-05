@@ -4,11 +4,11 @@
 ;;;
 ;;; C/C++ mode style for Ruby.
 ;;;
-;;;  $Author: nobu $
+;;;  $Author$
 ;;;  created at: Thu Apr 26 13:54:01 JST 2007
 ;;;
 
-(defconst ruby-style-revision "$Revision: 16153 $"
+(defconst ruby-style-revision "$Revision$"
   "Ruby style revision string.")
 
 (defconst ruby-style-version

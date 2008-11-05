@@ -53,7 +53,7 @@
 ;; TODO: maybe use browse-url-filename-alist
 
 (eval-when-compile (require 'cl))
-(eval-when-compile (load-library "cl-macs"))
+;;(eval-when-compile (load-library "cl-macs"))
 (defvar html-site-list) ;; Silence compiler
 (defvar html-site-current) ;; Silence compiler
 
@@ -170,6 +170,15 @@
   "Open `dired' in current site top directory."
   (interactive)
   (dired (html-site-current-site-dir)))
+
+(defun html-site-find-file ()
+  "Find file in current site."
+  (interactive)
+  (require 'ffip)
+  (ffip-set-current-project html-site-current
+                            (html-site-current-site-dir)
+                            'nxhtml)
+  (call-interactively 'find-file-in-project))
 
 (defun html-site-ensure-site-defined (site-name)
   (unless html-site-list

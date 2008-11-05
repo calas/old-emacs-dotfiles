@@ -52,7 +52,7 @@ If non-nil should be a function with no parameters.  Used by
 `rngalt-complete'.")
 
 (eval-when-compile
-  (unless (featurep 'nxml-nxhtml-autostart)
+  (unless (featurep 'nxhtml-autostart)
     (let ((efn (expand-file-name "../autostart.el")))
       (load efn))
     (require 'rng-valid)

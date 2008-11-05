@@ -1,0 +1,5 @@
+#name : Factory sequence
+# --
+Factory.sequence ${1:sequence_name} do |n|
+  "${0:text} #{n}"
+end
