@@ -233,12 +233,13 @@
 ;;
 ;; Read http://groups.google.com/group/emacs-on-rails/browse_thread/thread/dfaa224905b51487
 ;; http://rubyforge.iasi.roedu.net/files/ruby-debug/ruby-debug-extra-0.10.1.tar.gz (wget)
-;; (require 'rdebug)
+(require 'rdebug)
 
 ;; rinari
 ;; http://github.com/eschulte/rinari
 (require 'rinari)
 (require 'rinari-camps)
+(require 'rinari-merb)
 
 (global-set-key (kbd "C-x C-M-f") 'rinari-find-file-in-project)
 (setq rinari-browse-url-func 'browse-url-generic)
@@ -249,6 +250,9 @@
 ;; (add-to-list 'auto-mode-alist '("\.treetop$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("Rakefile" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.rake$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\.builder$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\.thor$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\.autotest$" . ruby-mode))
 
 ;; use exuberant-ctags
 ;;
@@ -401,6 +405,29 @@
         (asy-mode               .       (call-interactively 'asy-compile-view))
         (muse-mode              .       (call-interactively 'muse-project-publish))))
 (global-set-key (kbd "<f9>") 'smart-compile)
+
+;; apache-mode
+;; http://www.emacswiki.org/cgi-bin/wiki/download/apache-mode.el (wget)
+(autoload 'apache-mode "apache-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.htaccess\\'"   . apache-mode))
+(add-to-list 'auto-mode-alist '("httpd\\.conf\\'"  . apache-mode))
+(add-to-list 'auto-mode-alist '("srm\\.conf\\'"    . apache-mode))
+(add-to-list 'auto-mode-alist '("access\\.conf\\'" . apache-mode))
+(add-to-list 'auto-mode-alist '("sites-\\(available\\|enabled\\)/" . apache-mode))
+
+(defun rinari-merb-generate-tags()
+  (interactive)
+  (let ((my-tags-file (concat (rinari-merb-root) "TAGS"))
+	(root (rinari-merb-root)))
+    (message "Regenerating TAGS file: %s" my-tags-file)
+    (if (file-exists-p my-tags-file)
+	(delete-file my-tags-file))
+    (shell-command
+     (format "find %s -regex \".+rb$\" | xargs ctags-exuberant -a -e -f %s"
+	     root my-tags-file))
+    (if (get-file-buffer my-tags-file)
+	 (kill-buffer (get-file-buffer my-tags-file)))
+    (visit-tags-table my-tags-file)))
 
 (defun rinari-generate-tags()
   (interactive)
