@@ -135,6 +135,7 @@
 
 ;; ido-mode
 (setq ido-use-filename-at-point t)
+(setq ido-enable-flex-matching t)
 (ido-mode t)
 (ido-everywhere t)
 (add-hook 'ido-setup-hook 'custom-ido-extra-keys)
@@ -238,8 +239,8 @@
 ;; rinari
 ;; http://github.com/eschulte/rinari
 (require 'rinari)
-(require 'rinari-camps)
-(require 'rinari-merb)
+;; (require 'rinari-camps)
+;; (require 'rinari-merb)
 
 (global-set-key (kbd "C-x C-M-f") 'rinari-find-file-in-project)
 (setq rinari-browse-url-func 'browse-url-generic)
@@ -371,6 +372,10 @@
 ;; erlang interactive mode
 (require 'distel)
 (distel-setup)
+
+;; Gist support
+;; http://github.com/defunkt/gist.el/raw/master/gist.el (wget)
+(require 'gist)
 
 ;; keep scrolling in compilation result buffer
 (setq compilation-scroll-output t)

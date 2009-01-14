@@ -8,6 +8,10 @@
 ;; Created: 2006-11-10
 ;; Keywords: ruby, rails, project, convenience, web
 ;; EmacsWiki: Rinari
+;; Package-Requires: ((ruby-mode "1.0")
+;;                    (inf-ruby "2.0")
+;;                    (ruby-compilation "0.5")
+;;                    (jump "2.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -108,7 +112,8 @@
 		      "environment.rb" (expand-file-name "config" dir)))
       dir
     (let ((new-dir (expand-file-name (file-name-as-directory "..") dir)))
-      (unless (string-match "\\(^[[:alpha:]]:/$\\|^/$\\)" dir)
+      ;; regexp to match windows roots, tramp roots, or regular posix roots
+      (unless (string-match "\\(^[[:alpha:]]:/$\\|^/[^\/]+:\\|^/$\\)" dir)
 	(rinari-root new-dir)))))
 
 ;;--------------------------------------------------------------------------------
@@ -502,19 +507,25 @@ renders and redirects to find the final controller or view."
 	      (list (car cv) (cdr cv))))))
       . "app/views/\\1/\\2.*")))))
 
-(mapcar
- (lambda (type)
-   (let ((name (first type))
-	 (specs (third type))
-	 (make (fourth type)))
-     (eval `(defjump
-	      (quote ,(read (format "rinari-find-%S" name)))
-	      (quote ,specs)
-	      'rinari-root
-	      ,(format "Go to the most logical %S given the current location" name)
-	      ,(if make `(quote ,make))
-	      'ruby-add-log-current-method))))
- rinari-jump-schema)
+(defun rinari-apply-jump-schema (schema)
+  "This function takes a of SCHEMA s.t. each element in the list
+can be fed to `defjump'.  This is used to define all of the
+rinari-find-* functions, and can be used to customize their
+behavior."
+  (mapcar
+   (lambda (type)
+     (let ((name (first type))
+	   (specs (third type))
+	   (make (fourth type)))
+       (eval `(defjump
+		(quote ,(read (format "rinari-find-%S" name)))
+		(quote ,specs)
+		'rinari-root
+		,(format "Go to the most logical %S given the current location" name)
+		,(if make `(quote ,make))
+		'ruby-add-log-current-method))))
+   schema))
+(rinari-apply-jump-schema rinari-jump-schema)
 
 ;;--------------------------------------------------------------------
 ;; minor mode and keymaps
@@ -546,6 +557,7 @@ renders and redirects to find the final controller or view."
 			rinari-jump-schema)
 		rinari-minor-mode-keybindings))
 
+;;;###autoload
 (defun rinari-launch ()
   "Run `rinari-minor-mode' if inside of a rails projecct,
 otherwise turn `rinari-minor-mode' off if it is on."
@@ -558,14 +570,15 @@ otherwise turn `rinari-minor-mode' off if it is on."
 	       (rinari-minor-mode t))
       (if rinari-minor-mode (rinari-minor-mode)))))
 
+;;;###autoload
 (defvar rinari-major-modes
-  '('find-file-hook 'mumamo-after-change-major-mode-hook 'dired-mode-hook)
+  (if (boundp 'rinari-major-modes)
+      rinari-major-modes
+    (list 'find-file-hook 'mumamo-after-change-major-mode-hook 'dired-mode-hook))
   "Major Modes from which to launch Rinari.")
 
-(mapcar (lambda (hook)
-	  (eval `(add-hook ,hook
-			   (lambda () (rinari-launch)))))
-	rinari-major-modes)
+;;;###autoload
+(dolist (hook rinari-major-modes) (add-hook hook 'rinari-launch))
 
 (defadvice cd (after rinari-on-cd activate)
   "Active/Deactive rinari-minor-node when changing into and out
