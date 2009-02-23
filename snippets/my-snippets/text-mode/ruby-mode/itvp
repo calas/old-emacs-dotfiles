@@ -1,0 +1,4 @@
+#name : it { validate_presence_of(:attr) }
+# --
+it { should validate_presence_of(:${1:attribute}) }
+itvp$0

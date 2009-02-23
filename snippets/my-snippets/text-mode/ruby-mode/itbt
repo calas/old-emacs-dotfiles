@@ -1,0 +1,4 @@
+#name : it { should belong_to(:parent) }
+# --
+it { should belong_to(:${2:parent}) }
+itbt$0

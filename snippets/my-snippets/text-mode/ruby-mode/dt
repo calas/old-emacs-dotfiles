@@ -1,0 +1,4 @@
+#name : drop_table ...
+# --
+drop_table :${1:table}
+dt$0

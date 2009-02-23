@@ -1,0 +1,4 @@
+#name : it { should have_many(:assoc) }
+# --
+it { should have_many(:${2:associations}) }
+ithm$0
