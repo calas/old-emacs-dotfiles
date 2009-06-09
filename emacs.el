@@ -42,6 +42,10 @@
 	   (not (eq (process-status server-process) 'listen))))
   (server-start))
 
+;; Set my data
+(setq user-full-name "Jorge Calás Lozano")
+(setq user-mail-address "calas@qvitta.net")
+
 ;; Share clipboard with other X applications
 (setq x-select-enable-clipboard t)
 (setq interprogram-paste-function 'x-cut-buffer-or-selection-value)
@@ -133,6 +137,9 @@
 ;; delete trailing whitespace before save
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 
+;; windmove
+(windmove-default-keybindings)
+
 ;; ido-mode
 (setq ido-use-filename-at-point t)
 (setq ido-enable-flex-matching t)
@@ -160,8 +167,13 @@
 (add-to-list 'load-path "~/.emacs.d/elisp/cedet/common")
 (add-to-list 'load-path "~/.emacs.d/elisp/erlang")
 (add-to-list 'load-path "~/.emacs.d/elisp/distel/elisp")
-
+(add-to-list 'load-path "~/.emacs.d/elisp/org-mode/lisp")
+(add-to-list 'load-path "~/.emacs.d/elisp/org-mode/contrib/lisp")
+;; (add-to-list 'load-path "~/.emacs.d/elisp/rcodetools)
 ;; add more here as needed
+
+;; org-mode
+(require 'my-gtd)
 
 ;; emacs-wget
 ;; http://pop-club.hp.infoseek.co.jp/emacs/emacs-wget/emacs-wget-0.5.0.tar.gz
@@ -218,7 +230,7 @@
 ;; cvs -d :pserver:anonymous@rubyforge.org:/var/cvs/ri-emacs checkout ri-emacs
 ;;
 ;; C-h r
-(setq ri-ruby-script "/home/jorge/.emacs.d/elisp/ri-emacs/ri-emacs.rb")
+(setq ri-ruby-script "/usr/bin/ri-emacs")
 (autoload 'ri "ri-ruby" nil t)
 (global-set-key (kbd "C-h r") 'ri)
 
@@ -250,6 +262,7 @@
 ;; add file types to ruby-mode
 ;; (add-to-list 'auto-mode-alist '("\.treetop$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("Rakefile" . ruby-mode))
+(add-to-list 'auto-mode-alist '("Capfile" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.rake$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.builder$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.thor$" . ruby-mode))
@@ -260,10 +273,6 @@
 ;; Generate file with:
 ;;   ctags-exuberant -a -e -f TAGS --tag-relative -R app lib vendor
 (setq rinari-tags-file-name "TAGS")
-
-;; autotest support
-;; http://www.emacswiki.org/cgi-bin/emacs/download/autotest.el (wget)
-(require 'autotest)
 
 ;; nXhtml
 ;; http://ourcomments.org/Emacs/nXhtml/doc/nxhtml.html
@@ -279,7 +288,7 @@
  rng-nxml-auto-validate-flag nil
  ;; nxml-degraded t
  )
-(add-to-list 'auto-mode-alist '("\\.html\\.erb\\'" . eruby-nxhtml-mumamo))
+(add-to-list 'auto-mode-alist '("\\.html\\.erb\\'" . eruby-nxhtml-mumamo-mode))
 
 (setq mumamo-map
       (let ((map (make-sparse-keymap)))
@@ -377,6 +386,41 @@
 ;; http://github.com/defunkt/gist.el/raw/master/gist.el (wget)
 (require 'gist)
 
+;; w3m browser
+;;
+;; Homepage:
+;; http://emacs-w3m.namazu.org/
+;;
+;; Download latest CVS code (for emacs 23):
+;; cvs -d :pserver:anonymous@cvs.namazu.org:/storage/cvsroot login
+;; cvs -d :pserver:anonymous@cvs.namazu.org:/storage/cvsroot co emacs-w3m
+;;
+;; Requirements:
+;; wajig install w3m
+;;
+;; Compile:
+;; ./configure
+;; make
+;; sudo make install
+(require 'w3m-load)
+
+;; CSV
+;; http://www.emacswiki.org/emacs/download/csv-mode.el (wget)
+;; (require 'csv-mode)
+
+;; autotest support
+;; http://www.emacswiki.org/cgi-bin/emacs/download/autotest.el (wget)
+(setq autotest-use-ui t)
+(require 'autotest)
+
+;; Magit
+;; http://zagadka.vm.bytemark.co.uk/magit/
+(require 'magit)
+
+;; rcodetools
+;; http://eigenclass.org/hiki/rcodetools
+;; (require 'rcodetools)
+
 ;; keep scrolling in compilation result buffer
 (setq compilation-scroll-output t)
 
@@ -449,12 +493,61 @@
     (visit-tags-table my-tags-file)))
 ;; (add-hook 'rinari-minor-mode-hook 'rinari-generate-tags)
 
+(defun haml-convert-rhtml-file (rhtmlFile hamlFile)
+  "Convierte un fichero rhtml en un haml y abre un nuevo buffer"
+  (interactive "fSelect rhtml file: \nFSelect output (haml) file: ")
+  (let ((comando (concat "/usr/bin/html2haml -r "
+                         rhtmlFile
+                         " "
+                         hamlFile)))
+    (shell-command comando)
+    (find-file hamlFile)))
+
+(defun haml-convert-region (beg end)
+  "Convierte la región seleccionada a código haml"
+  (interactive "r")
+  (let ((comando "/usr/bin/html2haml -r -s"))
+  (shell-command-on-region beg end comando (buffer-name) t)))
+
+(defun haml-to-html-region (beg end)
+  "Convierte la región seleccionada a código html"
+  (interactive "r")
+  (let ((comando "/usr/bin/haml -s -c"))
+  (shell-command-on-region beg end comando (buffer-name) t)))
+
+
+(defun haml-convert-buffer ()
+  "Convierte el buffer seleccionado a código haml"
+  (interactive)
+  (let ((nuevoarchivo
+   (replace-regexp-in-string "r?html\\(.erb\\)?$" "haml"
+         (buffer-file-name))))
+     (haml-convert-region (point-min) (point-max))
+     (write-file nuevoarchivo)))
+
+(defun sass-convert-region (beg end)
+  "Convierte la región seleccionada a código sass"
+  (interactive "r")
+  (let ((comando "/usr/bin/css2sass -s"))
+  (shell-command-on-region beg end comando (buffer-name) t)))
+
+;; Insert path
+(defun insert-path (file)
+ "insert file"
+ (interactive "FPath: ")
+ (insert (expand-file-name file)))
+
+;; Poner los colorcitos lindos
+(setq ansi-color-for-comint-mode t)
+
+;; Modo de los ficheros de configuración de los TELES iSwitch
+(add-to-list 'auto-mode-alist '("\.rou$" . shell-script-mode))
+(add-to-list 'auto-mode-alist '("\.gbl$" . shell-script-mode))
+(add-to-list 'auto-mode-alist '("defaulttab" . shell-script-mode))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CUSTOMIZATIONS FILE ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq custom-file "~/.emacs.d/customizations.el")
 (load custom-file 'noerror)
-
-;; Set column width to 80
-(setq fill-column 80)
