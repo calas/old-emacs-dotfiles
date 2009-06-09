@@ -14,11 +14,11 @@
 # require 'autotest/notify'
 # require 'autotest/pretty'
 # require 'autotest/rcov'
-require 'autotest/redgreen'
+# require 'autotest/redgreen'
 # require 'autotest/screen'
 # require 'autotest/shame'
 # require 'autotest/snarl'
-# require 'autotest/timestamp'
+require 'autotest/timestamp'
 
 # Autotest::AutoUpdate.sleep_time = o
 # Autotest::AutoUpdate.update_cmd = o
