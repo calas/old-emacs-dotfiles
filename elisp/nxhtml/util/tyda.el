@@ -52,6 +52,7 @@
     (define-key map [(control ?c) ?.] 'tyda-lookup-word)
     map))
 
+;;;###autoload
 (defun tyda-lookup-word (word)
   "Look up word WORD at URL `http://tyda.se/'.
 This site translates between English and Swedish.  The site will

@@ -45,7 +45,7 @@
 ;;; Code:
 
 
-(require 'udev)
+(eval-when-compile (require 'udev))
 
 (defgroup udev-ecb nil
   "Customization group for udev-ecb."
@@ -123,6 +123,7 @@
                                  (customize-group-other-window 'udev-ecb)))
         (insert " Setup to load ECB from fetched sources when starting Emacs.")))))
 
+;;;###autoload
 (defun udev-ecb-update ()
   "Fetch and install ECB from the devel sources.
 To determine where to store the sources see `udev-ecb-dir'.

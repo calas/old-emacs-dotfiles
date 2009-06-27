@@ -44,6 +44,8 @@
 ;;
 ;;; Code:
 
+(eval-when-compile (require 'nxhtml-menu))
+
 (require 'sendmail)
 
 ;;(require 'emacsbug)
@@ -75,6 +77,7 @@
 ;;       (browse-url "https://bugs.launchpad.net/nxhtml")
 ;;     (mail-send-and-exit)))
 
+;;;###autoload
 (defun nxhtml-report-bug ()
   "Report a bug in nXhtml."
   (interactive)

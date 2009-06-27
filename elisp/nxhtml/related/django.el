@@ -63,6 +63,7 @@
    )
    "Minimal highlighting expressions for Django mode")
 
+;;;###autoload
 (define-derived-mode django-mode nil "Django"
   "Simple Django mode for use with mumamo.
 This mode only provides syntax highlighting."

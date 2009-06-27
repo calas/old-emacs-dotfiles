@@ -1,10 +1,10 @@
-;;; ffip2.el --- Find files in project
+;;; ffip.el --- Find files in project
 ;;
 ;; Authors: extracted from rinari by Phil Hagelberg and Doug Alcorn
 ;; Changed by Lennart Borgman
 ;; Created: 2008-08-14T23:46:22+0200 Thu
 ;; Version: 0.3
-;; Last-Updated:
+;; Last-Updated: 2008-12-28 Sun
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -45,14 +45,40 @@
 ;;
 ;;; Code:
 
+(eval-when-compile (require 'cl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Project data
 
 ;; Fix-me: Change the inner structure of ffip projects
 (defvar ffip-project-name nil "Project name.")
-(defconst ffip-project-roots nil "Project directory roots.")
+(defvar ffip-project-roots nil "Project directory roots.")
 (defvar ffip-project-type nil "Project type, `ffip-project-file-types'.")
+(defcustom ffip-project-file-types
+  (list
+    '(ruby "\\(\\.el$\\|\\.rb$\\|\\.js$\\|\\.emacs\\)")
+    (list 'nxhtml (concat
+                   (regexp-opt '(".html" ".htm" ".xhtml"
+                                 ".css"
+                                 ".js"
+                                 ".png" ".gif"
+                                 ))
+                  "\\'"))
+    )
+  "Project types and file types.
+The values in this list are used to determine if a file belongs
+to the current ffip project. Entries have the form
+
+  \(TYPE FILE-REGEXP)
+
+TYPE is the parameter set by `ffip-set-current-project'.  Files
+matching FILE-REGEXP within the project roots are members of the
+project."
+  :type '(repeat (list
+                  (symbol :tag "Type")
+                  (regexp :tag "File regexp")))
+  :group 'ffip)
+
 (defvar ffip-project-file-matcher nil "Project file matcher.")
 (defvar ffip-project-files-table nil "Project file cache.")
 
@@ -138,31 +164,6 @@ directory) and FULL-NAME is the full file name."
         (file-name-directory root)
       dir)))
 
-(defcustom ffip-project-file-types
-  (list
-    '(ruby "\\(\\.el$\\|\\.rb$\\|\\.js$\\|\\.emacs\\)")
-    (list 'nxhtml (concat
-                   (regexp-opt '(".html" ".htm" ".xhtml"
-                                 ".css"
-                                 ".js"
-                                 ".png" ".gif"
-                                 ))
-                  "\\'"))
-    )
-  "Project types and file types.
-The values in this list are used to determine if a file belongs
-to the current ffip project. Entries have the form
-
-  \(TYPE FILE-REGEXP)
-
-TYPE is the parameter set by `ffip-set-current-project'.  Files
-matching FILE-REGEXP within the project roots are members of the
-project."
-  :type '(repeat (list
-                  (symbol :tag "Type")
-                  (regexp :tag "File regexp")))
-  :group 'ffip)
-
 (defun ffip-populate-files-table (file file-regexp)
   ;;(message "ffip-populate-files-table.file=%s" file)
   (if (file-directory-p file)
@@ -243,7 +244,7 @@ project."
         (ffip-project-type nil)
         (ffip-project-file-matcher nil))
     (ffip-set-current-project "(temporary)" root nil)
-    (call-interactively 'find-file-in-project)))
+    (call-interactively 'ffip-find-file-in-project)))
 
 (defun ffip-find-file-in-project (file)
   "Find files in current ffip project."
@@ -254,8 +255,11 @@ project."
       (if (memq ido-mode '(file 'both))
           (ido-completing-read prompt
                                (mapcar 'car (ffip-project-files)))
-        (completing-read prompt
-                         (mapcar 'car (ffip-project-files)))))))
+        (let ((files (mapcar 'car (ffip-project-files))))
+          (completing-read prompt
+                           files
+                           (lambda (elem) (member elem files))
+                           t))))))
   (find-file (cdr (assoc file ffip-project-files-table))))
 
 ;;(global-set-key (kbd "C-x C-M-f") 'find-file-in-project)

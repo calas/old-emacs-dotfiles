@@ -1,17 +1,37 @@
 ;;; nxhtml-menu.el --- Defines menus for nXhtml
 ;;
 ;; Author: Lennart Borgman (lennart O borgman A gmail O com)
-;; Created: Sat Apr 21 13:49:41 2007
-(defconst nxhtml-menu:version "1.59") ;;Version:
-;; Last-Updated: 2008-08-26T23:28:00+0200 Tue
+;; Created: Sat Apr 21 2007
+(defconst nxhtml-menu:version "1.81") ;;Version:
+;; Last-Updated: 2009-05-29 Fri
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
 ;;
 ;; Features that might be required by this library:
 ;;
-;;   `compile', `flymake', `flymake-js', `flymake-php', `hexcolor',
-;;   `tool-bar', `xhtml-help'.
+  ;; `appmenu', `appmenu-fold', `apropos', `backquote', `button',
+  ;; `bytecomp', `cl', `comint', `compile', `css-color', `cus-edit',
+  ;; `cus-face', `cus-load', `cus-start', `dired', `easymenu',
+  ;; `ediff', `ediff-diff', `ediff-help', `ediff-init', `ediff-merg',
+  ;; `ediff-mult', `ediff-util', `ediff-wind', `ffip', `flymake',
+  ;; `flymake-js', `flymake-php', `flyspell', `fold-dwim', `gimp',
+  ;; `grep', `help-mode', `hideshow', `html-imenu', `html-quote',
+  ;; `html-site', `html-upl', `ido', `ietf-drums', `imenu', `ispell',
+  ;; `loadhist', `mail-parse', `mail-prsvr', `mailcap', `mlinks',
+  ;; `mm-util', `mumamo', `nxhtml-mode', `nxml-enc', `nxml-glyph',
+  ;; `nxml-mode', `nxml-ns', `nxml-outln', `nxml-parse', `nxml-rap',
+  ;; `nxml-util', `ourcomments-util', `outline', `popcmp', `qp',
+  ;; `recentf', `rfc2045', `rfc2047', `rfc2231', `ring', `rng-dt',
+  ;; `rng-loc', `rng-match', `rng-nxml', `rng-parse', `rng-pttrn',
+  ;; `rng-uri', `rng-util', `rng-valid', `rngalt', `rx',
+  ;; `setup-helper', `sgml-mode', `tidy-xhtml', `time-date', `timer',
+  ;; `timezone', `tls', `tool-bar', `tree-widget', `typesetter',
+  ;; `udev', `udev-cedet', `udev-ecb', `udev-rinari', `url',
+  ;; `url-auth', `url-c', `url-cookie', `url-expand', `url-gw',
+  ;; `url-history', `url-http', `url-methods', `url-parse',
+  ;; `url-privacy', `url-proxy', `url-util', `url-vars', `view',
+  ;; `w32-reg-iface', `w32-regdat', `wid-edit', `xmltok'.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -45,13 +65,21 @@
 ;;
 ;;; Code:
 
-(require 'hexcolor)
-(require 'flymake)
-(require 'flymake-php)
-(require 'flymake-js)
+(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cus-edit))
+(eval-when-compile (require 'dired))
+(eval-when-compile (require 'gimp))
+(eval-when-compile (require 'html-site))
+(eval-when-compile (when (fboundp 'nxml-mode) (require 'nxhtml-mode)))
+(eval-when-compile (require 'css-color))
+(eval-when-compile (require 'flymake))
+(eval-when-compile (require 'flymake-php))
+(eval-when-compile (require 'flymake-js))
+(eval-when-compile (require 'udev-ecb))
+(eval-when-compile (require 'udev-cedet))
+(eval-when-compile (require 'udev-rinari))
 
 (defun nxhtml-nxhtml-in-buffer ()
-  ;;(message "nxhtml-nxhtml-in-buffer ()")
   (or (derived-mode-p 'nxhtml-mode)
       (when (and (boundp 'mumamo-multi-major-mode)
                  mumamo-multi-major-mode)
@@ -59,7 +87,6 @@
           (derived-mode-p 'nxhtml-mode)))))
 
 (defun nxhtml-nxml-in-buffer ()
-  ;;(message "nxhtml-nxml-in-buffer ()")
   (or (derived-mode-p 'nxml-mode)
       (when (and (boundp 'mumamo-multi-major-mode)
                  mumamo-multi-major-mode)
@@ -67,7 +94,6 @@
           (derived-mode-p 'nxml-mode)))))
 
 (defun nxhtml-html-in-buffer ()
-  ;;(message "nxhtml-html-in-buffer ()")
   (or (derived-mode-p 'html-mode)
       (when (and (boundp 'mumamo-multi-major-mode)
                  mumamo-multi-major-mode)
@@ -76,7 +102,6 @@
       (nxhtml-nxhtml-in-buffer)))
 
 (defun nxhtml-nxml-html-in-buffer ()
-  ;;(message "nxhtml-nxml-html-in-buffer")
   (or (derived-mode-p 'html-mode)
       (when (and (boundp 'mumamo-multi-major-mode)
                  mumamo-multi-major-mode)
@@ -92,7 +117,6 @@
        (html-site-current-ensure-file-in-site file)))
 
 (defun nxhtml-buffer-possibly-local-viewable (&optional file)
-  ;;(message "nxhtml-buffer-possibly-local-viewable ()")
   (unless file
     (setq file (html-site-buffer-or-dired-file-name)))
   (or (and file
@@ -100,7 +124,6 @@
                    '("html" "htm" "gif" "png")))))
 
 (defun nxhtml-buffer-possibly-remote-viewable ()
-  ;;(message "nxhtml-buffer-possibly-remote-viewable ()")
   ;; Fix-me
   (let* ((fmt "nxhtml-buffer-possibly-remote-viewable.dgffv: %s")
          (file (or buffer-file-name
@@ -116,10 +139,107 @@
                  '("html" "htm" "gif" "png" "pl" "php")))))
 
 (defun nxhtml-insert-menu-dynamically (real-binding)
-  ;;(message "nxhtml-insert-menu-dynamically (%s)" real-binding)
   (when (and (symbolp real-binding)
              (boundp real-binding))
     (symbol-value real-binding)))
+
+(defun nxhtml-menu-image-file ()
+  (or (get-char-property (point) 'image-file)
+      buffer-file-name))
+
+(defun nxhtml-gimp-can-edit ()
+  (gimp-can-edit (nxhtml-menu-image-file)))
+
+;;;###autoload
+(defun nxhtml-edit-with-gimp ()
+  "Edit with GIMP buffer or file at point."
+  (interactive)
+  (gimp-edit-file (nxhtml-menu-image-file)))
+
+;;;###autoload
+(defun nxhtml-browse-file (file)
+  "View file in web browser."
+  (interactive (list
+                (or (html-site-buffer-or-dired-file-name)
+                    (read-file-name "File: "))))
+  (let* ((buf (if (buffer-file-name)
+                  (current-buffer)
+                (find-buffer-visiting file)))
+         (use-temp (and (buffer-file-name)
+                        (or (and (boundp 'nxhtml-current-validation-header)
+                                 nxhtml-current-validation-header)
+                            (buffer-modified-p)
+                            (not buffer-file-name)
+                            (not (file-exists-p buffer-file-name))))))
+    (if use-temp
+        (browse-url (nxhtml-save-browseable-temp-file nil nil use-temp))
+      (browse-url-of-file file))))
+
+;;;###autoload
+(defun nxhtml-browse-region ()
+  "View region in web browser."
+  (interactive)
+  (unless mark-active
+    (error "The region is not active"))
+  (browse-url (nxhtml-save-browseable-temp-file (region-beginning) (region-end))))
+
+;;(defvar nxhtml-browseable-buffer-name "*nXhtml Browsing Buffer*")
+(defvar nxhtml-browseable-buffer-file "~/.temp-nxhtml-browse.htm")
+;; Fix-me: Handle base href here!
+(defun nxhtml-save-browseable-temp-file (start end &optional doit-anyway)
+  "Return a temporary file for viewing in web browser."
+  ;; When using this either region should be active or there should be
+  ;; a validation header or both.
+  (or doit-anyway
+      (and start end) ;mark-active
+      (and (boundp 'nxhtml-validation-header-mode)
+           nxhtml-validation-header-mode
+           nxhtml-current-validation-header)
+      (error "Neither region nor validation header"))
+  (save-excursion
+    (let ((curbuf (current-buffer))
+          (view-buffer (find-file-noselect nxhtml-browseable-buffer-file))
+          header
+          content)
+      ;; Get header and content
+      (save-restriction
+        (widen)
+        (setq header
+              (if nxhtml-validation-header-mode
+                  (let* ((key nxhtml-current-validation-header)
+                         (rec (unless (listp key)
+                                (assoc key nxhtml-validation-headers)))
+                         (header (cdr rec)))
+                    header)
+                (if (and doit-anyway (not start))
+                    ""
+                  (goto-char (point-min))
+                  (save-match-data
+                    (let ((body (re-search-forward "<body[^>]*>")))
+                      (if body
+                          (buffer-substring-no-properties (point-min) (match-end 0))
+                        ""))))))
+        (setq content
+              (if start
+                  (buffer-substring-no-properties start end)
+                (buffer-substring-no-properties (point-min) (point-max))))
+        )
+      ;; Switch to view buffer
+      (set-buffer view-buffer)
+      ;;       (unless buffer-file-name
+      ;;         (set-visited-file-name nxhtml-browseable-buffer-file)
+      ;;         (rename-buffer nxhtml-valhead-view-buffer-name))
+      (erase-buffer)
+      (insert header content)
+      ;;(when (fboundp 'emacsw32-eol-set) (emacsw32-eol-set nil))
+      (nxhtml-mode)
+      (save-buffer)
+      ;;(current-buffer)
+      (kill-buffer view-buffer)
+      (expand-file-name nxhtml-browseable-buffer-file)
+      )))
+
+
 
 (defconst nxhtml-minor-mode-menu-map
   (let ((map (make-sparse-keymap "nxhtml-minor-mode-menu")))
@@ -134,6 +254,8 @@
       (define-key help-map [nxhtml-report-bug]
         (list 'menu-item "Report a Bug in nXhtml ..." 'nxhtml-report-bug))
       (define-key help-map [nxhtml-help-separator2] (list 'menu-item "--"))
+      (define-key help-map [nxhtml-byte-compile-nxhtml]
+        (list 'menu-item "Byte Compile nXhtml" 'nxhtmlmaint-start-byte-compilation))
       (define-key help-map [nxhtml-features-check]
         (list 'menu-item "Check Optional Features" 'nxhtml-features-check))
       (define-key help-map [nxhtml-customize]
@@ -143,8 +265,10 @@
       (define-key help-map [nxhtml-help-separator3] (list 'menu-item "--"))
 ;;;       (define-key help-map [nxhtml-help]
 ;;;         (list 'menu-item "nXhtml Help" 'nxhtml-help))
+      (define-key help-map [nxhtml-tutorials]
+        (list 'menu-item "nXhtml Tutorials" 'nxhtml-tutorials))
       (define-key help-map [nxhtml-overview]
-        (list 'menu-item (concat "nXhtml version " nxhtml-menu:version " Overview") 'nxhtml-overview))
+        (list 'menu-item (concat "nXhtml Version " nxhtml-menu:version " Overview") 'nxhtml-overview))
       (define-key help-map [nxhtml-welcome]
         (list 'menu-item "Welcome to nXhtml" 'nxhtml-welcome))
       (define-key map [nxhtml-help-map]
@@ -160,33 +284,48 @@
         (list 'menu-item "Tools" tools-map
               :visible `(not (derived-mode-p 'dired-mode))
               ))
+      (define-key tools-map [nxhtml-last-resort]
+        (list 'menu-item "Last Resort" 'n-back-game))
+      (define-key tools-map [nxhtml-last-resort-separator]
+        (list 'menu-item "--" nil))
       (let ((fill-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-filling]
-          (list 'menu-item "Filling" fill-map))
+          (list 'menu-item "Writing Text" fill-map))
         (define-key fill-map [nxhtml-unfill-paragraph]
           (list 'menu-item "Unfill Paragraph" 'unfill-paragraph))
         (define-key fill-map [nxhtml-fill-paragraph]
           (list 'menu-item "Fill Paragraph" 'fill-paragraph))
-        (define-key fill-map [nxhtml-longlines-separator]
+        (define-key fill-map [nxhtml-wrap-to-fill-separator]
           (list 'menu-item "--" nil))
-        (define-key fill-map [nxhtml-longlines-mode]
-          (list 'menu-item "Long Lines Mode"
-                'longlines-mode
-                :button '(:toggle . (and (boundp 'longlines-mode)
-                                         longlines-mode))))
+        (define-key fill-map [nxhtml-html-write-mode]
+          (list 'menu-item "HTML Write Mode"
+                'html-write-mode
+                :button '(:toggle . (and (boundp 'html-write-mode)
+                                         html-write-mode))))
+        (define-key fill-map [nxhtml-wrap-to-fill-column-mode]
+          (list 'menu-item "Wrap To Fill Column Mode"
+                'wrap-to-fill-column-mode
+                :button '(:toggle . (and (boundp 'wrap-to-fill-column-mode) wrap-to-fill-column-mode))))
         )
       (define-key tools-map [nxhtml-ecb-separator]
         (list 'menu-item "--" nil))
       (let ((ecb-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-ecb-map]
           (list 'menu-item "ECB" ecb-map))
+        (define-key ecb-map [nxhtml-rinari-homepage]
+          (list 'menu-item "ECB Home Page"
+                (lambda ()
+                  "Open ECB home page in your web browser."
+                  (interactive)
+                  (browse-url "http://ecb.sourceforge.net/"))))
+        (define-key ecb-map [nxhtml-ecb-home-separator]
+          (list 'menu-item "--" nil))
         (define-key ecb-map [nxhtml-update-ecb]
           (list 'menu-item "Fetch/update ECB dev sources"
                 'udev-ecb-update))
         (define-key ecb-map [nxhtml-custom-ecb]
           (list 'menu-item "Customize ECB dev startup"
                 (lambda () (interactive)
-                  (require 'udev-ecb)
                   (customize-group-other-window 'udev-ecb))))
         (define-key ecb-map [nxhtml-custom-important-ecb]
           (list 'menu-item "Customize important ECB things"
@@ -198,25 +337,39 @@
       (let ((cedet-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-cedet-map]
           (list 'menu-item "CEDET" cedet-map))
+        (define-key cedet-map [nxhtml-rinari-homepage]
+          (list 'menu-item "CEDET Home Page"
+                (lambda ()
+                  "Open CEDET home page in your web browser."
+                  (interactive)
+                  (browse-url "http://cedet.sourceforge.net/"))))
+        (define-key cedet-map [nxhtml-cedet-home-separator]
+          (list 'menu-item "--" nil))
         (define-key cedet-map [nxhtml-update-cedet]
           (list 'menu-item "Fetch/update CEDET dev sources"
                 'udev-cedet-update))
         (define-key cedet-map [nxhtml-custom-cedet]
           (list 'menu-item "Customize CEDET dev startup"
                 (lambda () (interactive)
-                  (require 'udev-cedet)
                   (customize-group-other-window 'udev-cedet))))
         )
       (let ((rinari-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-rinari-map]
           (list 'menu-item "Rinari" rinari-map))
+        (define-key rinari-map [nxhtml-rinari-homepage]
+          (list 'menu-item "Rinari Home Page"
+                (lambda ()
+                  "Open Rinari home page in your web browser."
+                  (interactive)
+                  (browse-url "http://rubyforge.org/projects/rinari/"))))
+        (define-key rinari-map [nxhtml-rinari-home-separator]
+          (list 'menu-item "--" nil))
         (define-key rinari-map [nxhtml-update-rinari]
           (list 'menu-item "Fetch/update Rinari dev sources"
                 'udev-rinari-update))
         (define-key rinari-map [nxhtml-custom-rinari]
           (list 'menu-item "Customize Rinari startup"
                 (lambda () (interactive)
-                  (require 'udev-rinari)
                   (customize-group-other-window 'udev-rinari))))
         )
       (let ((mozrepl-map (make-sparse-keymap)))
@@ -226,6 +379,7 @@
         (define-key mozrepl-map [nxhtml-mozrepl-home-page]
           (list 'menu-item "MozLab/MozRepl Home Page"
                 (lambda ()
+                  "Open MozLab/MozRepl home page in your web browser."
                   (interactive)
                   (browse-url "http://hyperstruct.net/projects/mozlab"))))
         (define-key mozrepl-map [nxhtml-mozrepl-separator2]
@@ -237,7 +391,11 @@
           (list 'menu-item "--" nil))
         (define-key mozrepl-map [nxhtml-mozrepl-save-and-send]
           (list 'menu-item "Save Buffer and Send it" 'moz-save-buffer-and-send
-                :enable '(not mumamo-multi-major-mode)))
+                :enable '(or (not (boundp 'mumamo-multi-major-mode))
+                             (not mumamo-multi-major-mode))))
+
+
+
         (define-key mozrepl-map [nxhtml-mozrepl-send-defun-and-go]
           (list 'menu-item "Send Current Function, Go to MozRepl"
                 'moz-send-defun-and-go
@@ -268,14 +426,17 @@
       (define-key tools-map [nxhtml-tidy-map]
         (list 'menu-item "Tidy XHTML" 'tidy-menu-symbol
               :filter 'nxhtml-insert-menu-dynamically
-              :visible '(featurep 'tidy-xhtml)
-              :enable '(and (featurep 'tidy-xhtml)
+              :visible '(and (fboundp 'tidy-build-menu)
+                             (tidy-build-menu))
+              :enable '(and (fboundp 'tidy-build-menu)
+                            (tidy-build-menu)
                             (or (derived-mode-p 'html-mode)
                                 (nxhtml-nxhtml-in-buffer)))))
       (define-key tools-map [nxhtml-flymake]
         (list 'menu-item "Flymake Mode" 'flymake-mode
-              :button '(:toggle . flymake-mode)
+              :button '(:toggle . (and (boundp 'flymake-mode) flymake-mode))
               :enable '(and buffer-file-name
+                            (fboundp 'flymake-get-init-function)
                             (flymake-get-init-function buffer-file-name)
                             )))
       (let ((flyspell-map (make-sparse-keymap)))
@@ -295,60 +456,79 @@
         )
       (define-key tools-map [nxhtml-flyspell-separator]
         (list 'menu-item "--"))
-      (define-key tools-map [nxhtml-gimp-edit]
-        (list 'menu-item "Edit with GIMP" 'gimp-edit-buffer
-              :enable '(and buffer-file-name
-                            (member (downcase (file-name-extension buffer-file-name))
-                                    '("png" "gif" "jpg" "jpeg")))))
-      (define-key tools-map [nxhtml-gimp-separator]
+      (let ((img-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-img-map]
+          (list 'menu-item "Images" img-map))
+        (define-key img-map [nxhtml-chart]
+          (list 'menu-item "Make Chart" 'chart-make-chart))
+        (define-key img-map [nxhtml-chart-separator] (list 'menu-item "--"))
+        (define-key img-map [nxhtml-gimp-edit]
+          (list 'menu-item "Edit with GIMP" 'nxhtml-edit-with-gimp
+                :enable '(nxhtml-gimp-can-edit)))
+        (define-key img-map [nxhtml-gimp-separator] (list 'menu-item "--"))
+        (define-key img-map [nxhtml-inlimg-toggle-img]
+          (list 'menu-item "Toggle Display of Image" 'inlimg-toggle-img-display))
+        (define-key img-map [nxhtml-inlimg-mode]
+          (list 'menu-item "Show <img ...> Images" 'inlimg-mode
+                :button '(:toggle . (and (boundp 'inlimg-mode) inlimg-mode)))))
+      (define-key tools-map [nxhtml-img-separator]
         (list 'menu-item "--"))
       (let ((some-help-map (make-sparse-keymap)))
         (define-key tools-map [nxhtml-some-help-map]
           (list 'menu-item "Help for Item at Point" some-help-map))
         (define-key some-help-map [nxhtml-css-help]
-          (list 'menu-item "CSS Help" 'xhtml-help-show-css-ref
-                :enable '(featurep 'xhtml-help)))
+          (list 'menu-item "CSS Help" 'xhtml-help-show-css-ref))
         (define-key some-help-map [nxhtml-tag-help]
-          (list 'menu-item "XHTML Tag Help" 'nxhtml-short-tag-help
-                :enable '(featurep 'xhtml-help))))
+          (list 'menu-item "XHTML Tag Help" 'nxhtml-short-tag-help)))
 
-      (let ((hexclr-map (make-sparse-keymap)))
-        (define-key tools-map [nxhtml-hexcolor]
-          (list 'menu-item "Color Help" hexclr-map))
-        (define-key hexclr-map [nxhtml-hexcolor-mode]
-          (list 'menu-item "Hex Color Mode"
-                'hexcolor-mode
-                :filter 'nxhtml-insert-menu-dynamically
-                :enable '(and font-lock-mode
-                              (not mumamo-multi-major-mode)
-                              (featurep 'hexcolor))
-                :button '(:toggle . (and (boundp 'hexcolor-mode) hexcolor-mode))))
-        (define-key hexclr-map [nxhtml-hexcolor-test]
-          (list 'menu-item "Color Test" 'hexcolor-test
-                :enable '(featurep 'hexcolor))))
+      (let ((cssclr-map (make-sparse-keymap)))
+        (define-key tools-map [nxhtml-css-color]
+          (list 'menu-item "Color Help" cssclr-map))
+        (define-key cssclr-map [nxhtml-css-color-mode]
+          (list 'menu-item "Css Color Mode" 'css-color-mode
+		:enable '(and font-lock-mode
+                              (or (not (boundp 'mumamo-multi-major-mode))
+                                  (not mumamo-multi-major-mode))
+                              (featurep 'css-color))
+                :button '(:toggle . (and (boundp 'css-color-mode) css-color-mode))))
+        (define-key cssclr-map [nxhtml-css-color-test]
+          (list 'menu-item "Color Test" 'css-color-test
+                :enable '(featurep 'css-color))))
 
       (let ((where-map (make-sparse-keymap)))
         (define-key tools-map [nxml-where]
           (list 'menu-item "XML Path" where-map
-                :enable '(and (featurep 'nxml-where)
+                :enable '(and (fboundp 'nxml-where-mode)
                               (or (derived-mode-p 'nxml-mode)
                                   (nxhtml-nxhtml-in-buffer)))))
+        (define-key where-map [nxhtml-nxml-where-cust]
+          (list 'menu-item "Customize display of XML Path"
+                (lambda () (interactive)
+                  (customize-group-other-window 'nxml-where))))
+        (define-key where-map [where-separator-2] (list 'menu-item "--"))
         (define-key where-map [nxml-where-id]
           (list 'menu-item "Show tag ids in path" 'nxml-where-tag+id-toggle
-                :button '(:toggle . nxml-where-tag+id)))
+                :enable '(boundp 'nxml-where-tag+id)
+                :button '(:toggle . (and (boundp 'nxml-where-tag+id)
+                                         nxml-where-tag+id))))
         (define-key where-map [nxml-where-header]
           (list 'menu-item "Show XML path in header" 'nxml-where-header-toggle
-                :button '(:toggle . nxml-where-header)))
+                :enable '(boundp 'nxml-where-header)
+                :button '(:toggle . (and (boundp 'nxml-where-header)
+                                         'nxml-where-header))))
         (define-key where-map [nxml-where-marks]
           (list 'menu-item "Show XML path marks" 'nxml-where-marks-toggle
-                :button '(:toggle . nxml-where-marks)))
+                :enable '(boundp 'nxml-where-marks)
+                :button '(:toggle . (and (boundp 'nxml-where-marks)
+                                         nxml-where-marks))))
         (define-key where-map [where-separator] (list 'menu-item "--"))
         (define-key where-map [nxml-where-global-toggle]
           (list 'menu-item "Show XML path" 'nxml-where-global-mode
                 :button '(:toggle . nxml-where-global-mode)))
         (define-key where-map [nxml-where-toggle]
           (list 'menu-item "Show XML path in buffer" 'nxml-where-mode
-                :button '(:toggle . nxml-where-mode)))
+                :button '(:toggle . (and (boundp 'nxml-where-mode)
+                                         nxml-where-mode))))
         ))
 
     (let ((quick-map (make-sparse-keymap)))
@@ -370,8 +550,9 @@
                   :filter 'nxhtml-insert-menu-dynamically)))
         (define-key sometoc-map [nxhtml-html-pagetoc]
           (list 'menu-item "For Page" 'html-pagetoc-menu-map
+                :enable (boundp 'html-pagetoc-menu-map)
                 :filter 'nxhtml-insert-menu-dynamically
-                :enable '(featurep 'html-pagetoc)))
+                ))
         (define-key quick-map [nxhtml-sometoc-map]
           (list 'menu-item "Table of Contents" sometoc-map
                 :visible '(or (derived-mode-p 'html-mode)
@@ -398,7 +579,8 @@
     (let ((upl-map (make-sparse-keymap "html-upl")))
       (define-key map [nxhtml-upl-map]
         (list 'menu-item "File Transfer" upl-map
-              :enable '(featurep 'html-upl)))
+              ;;:enable '(featurep 'html-upl)))
+              :enable '(fboundp 'html-upl-upload-file)))
       (define-key upl-map [nxhtml-upl-remote-dired]
         (list 'menu-item "Remote Dired" 'html-upl-remote-dired))
       (define-key upl-map [nxhtml-upl-dired-sep] (list 'menu-item "--"))
@@ -545,7 +727,8 @@
       (define-key site-map [html-site-global-mode]
         (list 'menu-item "HTML Site Global Mode"
               'html-site-global-mode
-              :button '(:toggle . html-site-global-mode)))
+              :button '(:toggle . (and (boundp 'html-site-global-mode)
+                                       html-site-global-mode))))
       (define-key site-map [nxhtml-site-separator] (list 'menu-item "--"))
       (define-key site-map [nxhtml-customize-site-list]
         (list 'menu-item "Edit Sites" (lambda () (interactive)
@@ -557,35 +740,36 @@
         (list 'menu-item "Dired Site" 'html-site-dired-current))
       (define-key site-map [nxhtml-find-site-file]
         (list 'menu-item "Find File in Site" 'html-site-find-file))
+      (define-key site-map [nxhtml-site-search-separator]
+        (list 'menu-item "--" nil))
+      (define-key site-map [nxhtml-replace-in-site]
+        (list 'menu-item "Replace in Site Files" 'html-site-query-replace))
+      (define-key site-map [nxhtml-rgrep-in-site]
+        (list 'menu-item "Search Site Files" 'html-site-rgrep))
       )
 
     (define-key map [nxhtml-insert-separator]
       (list 'menu-item "--" nil
             :visible `(not (derived-mode-p 'dired-mode))
             ))
-
-;;;     (let ((mu-map (make-sparse-keymap)))
-;;;       (define-key map [mumamo-map]
-;;;         (list 'menu-item "Multiple Major Modes" mu-map
-;;;               :enable '(featurep 'mumamo)))
-;;;       (define-key mu-map [nxhtml-mumamo-set-chunk-family]
-;;;         (list 'menu-item "Set Chunk Family" 'mumamo-set-chunk-family
-;;;               :enable 'mumamo-mode))
-;;;       (define-key mu-map [nxml-insert-separator-move22] (list 'menu-item "--"))
-;;; ;;;       (define-key mu-map [nxhtml-mumamo-global]
-;;; ;;;         (list 'menu-item "Multiple Major Modes Globally" 'mumamo-global-mode
-;;; ;;;               :button '(:toggle . mumamo-global-mode)))
-;;;       (define-key mu-map [nxhtml-mumamo]
-;;;         (list 'menu-item "Multiple Major Modes in Buffer" 'mumamo-mode
-;;;               :button '(:toggle . mumamo-mode)))
-;;;       (define-key map [nxhtml-mumamo-separator] (list 'menu-item "--"))
-;;;       )
-
     (let ((chunk-map (make-sparse-keymap)))
       (define-key map [nxhtml-chunk-map]
-        (list 'menu-item "Chunk" chunk-map
+        (list 'menu-item "Chunks" chunk-map
               :visible `(not (derived-mode-p 'dired-mode))
-              :enable 'mumamo-multi-major-mode))
+              :enable '(and (boundp 'mumamo-multi-major-mode)
+                            mumamo-multi-major-mode)))
+      (let ((region-map (make-sparse-keymap)))
+        (define-key chunk-map [nxhtml-region-map]
+          (list 'menu-item "Region Chunks" region-map))
+        (define-key region-map [mumamo-clear-all-regions]
+          (list 'menu-item "Clear Region Chunks"
+                'mumamo-clear-all-regions
+                :enable '(fboundp 'mumamo-clear-all-regions)))
+        (define-key region-map [mumamo-add-region]
+          (list 'menu-item "Add Region Chunk"
+                'mumamo-add-region)))
+      (define-key chunk-map [nxhtml-region-separator]
+        (list 'menu-item "--" nil))
       (define-key chunk-map [mumamo-mark-chunk]
         (list 'menu-item "Mark Chunk"
               'mumamo-mark-chunk))
@@ -640,6 +824,12 @@
 ;;;           (list 'menu-item "Allow attr=\"<?php...?>\" etc"
 ;;;                 'nxhtml-strval-mode
 ;;;                 :button '(:toggle . nxhtml-strval-mode)))
+        (define-key val-map [mumamo-alt-php-tags]
+          (list 'menu-item "Use <?php -> (?php"
+                'mumamo-alt-php-tags-mode
+                :button '(:toggle . mumamo-alt-php-tags-mode)
+                ))
+        (define-key val-map [mumamo-alt-tags-separator] (list 'menu-item "--"))
         (define-key val-map [nxhtml-toggle-warnings]
           (list 'menu-item "Hide Validation Errors"
                 'nxhtml-toggle-visible-warnings
@@ -738,11 +928,8 @@
 
 (defvar nxhtml-minor-mode-map
   (let ((map (make-sparse-keymap)))
-    (require 'xhtml-help nil t)
-    (when (featurep 'xhtml-help)
-      (define-key map [(control ?c) ?? ?x] 'nxhtml-short-tag-help)
-      (define-key map [(control ?c) ?? ?c] 'xhtml-help-show-css-ref)
-      )
+    (define-key map [(control ?c) ?? ?x] 'nxhtml-short-tag-help)
+    (define-key map [(control ?c) ?? ?c] 'xhtml-help-show-css-ref)
     (define-key map [(control ?c) ?_] 'nxhtml-toggle-visible-warnings)
     (define-key map [menu-bar nxhtml-minor-mode]
       (list 'menu-item "nXhtml" nxhtml-minor-mode-menu-map))
@@ -753,7 +940,6 @@
 See `nxhtml-mode' for more information."
   :keymap nxhtml-minor-mode-map
   :group 'nxhtml
-  ;;(if nxhtml-minor-mode (message "+++> Turning on nxhtml-minor-mode") (message "---> Turning off nxhtml-minor-mode"))
   )
 ;;(put 'nxhtml-minor-mode 'permanent-local t)
 
@@ -786,7 +972,8 @@ See `nxhtml-minor-mode-modes'."
               (string= " " (substring (buffer-name) 0 1))
               (string= "*" (substring (buffer-name) 0 1))
               )
-    (let ((on mumamo-multi-major-mode))
+    (let ((on (and (boundp 'mumamo-multi-major-mode)
+                   mumamo-multi-major-mode)))
       (dolist (major nxhtml-minor-mode-modes)
         (when (derived-mode-p major)
           (setq on t)))
@@ -795,11 +982,17 @@ See `nxhtml-minor-mode-modes'."
       (when on
         (nxhtml-minor-mode 1)))))
 
+;;;###autoload
 (define-globalized-minor-mode nxhtml-global-minor-mode
   nxhtml-minor-mode
   nxhtml-maybe-turn-on-minor-mode
+  ;;:require 'nxhtml-menu
   :group 'nxhtml)
-(when nxhtml-global-minor-mode (nxhtml-global-minor-mode 1))
+;;(message "nxhtml-menu:here A")
+;;(custom-reevaluate-setting 'nxhtml-global-minor-mode)
+;;(message "nxhtml-menu:here B")
+;;(when nxhtml-global-minor-mode (nxhtml-global-minor-mode 1))
+;;(message "nxhtml-menu:here C")
 
 
 (defun nxhtml-docfile ()
@@ -811,10 +1004,16 @@ See `nxhtml-minor-mode-modes'."
 (defun nxhtml-docfile-url ()
   (concat "file://" (nxhtml-docfile)))
 
+;;;###autoload
 (defun nxhtml-overview ()
-  "Show a HTML page with an overview of `nxhtml-mode'."
+  "Show a HTML page with an overview of nXhtml."
   (interactive)
   (browse-url (nxhtml-docfile-url)))
+
+(defun nxhtml-tutorials ()
+  "Show a HTML page with a list of tutorials for nXhtml'."
+  (interactive)
+  (browse-url "http://ourcomments.org/Emacs/nXhtml/tut/tutorials.html"))
 
 (defun nxhtml-custom-valfaced (value &optional bgcolor)
   (let ((v (if (sequencep value)
@@ -981,7 +1180,7 @@ Both the current value and the value to save is set, but
     (unless oldbuf
       (let ((inhibit-read-only t)
             (here (point)))
-        (custom-mode)
+        (Custom-mode)
         (setq cursor-in-non-selected-windows nil)
         (nxhtml-custom-h1 "Welcome to nXhtml - a package for web editing" t)
         (insert "\n\n")
@@ -1001,19 +1200,6 @@ Both the current value and the value to save is set, but
                 "(which is in the Help menu above).\n\n")
         (fill-region here (point))
         (setq here (point))
-
-;;;         (insert "
-
-;;; To make the use of nXhtml as smooth as possible I also recommend
-;;; that you go to ")
-
-;;;         (widget-insert-link "Quick Customize nXhtml"
-;;;                             (lambda ()
-;;;                               (nxhtml-quick-customize))
-;;;                             nil)
-
-;;;         (insert " and follow the instructions
-;;; there.")
 
         (unless (nxhtml-skip-welcome)
           (insert "Click to ")
@@ -1044,13 +1230,17 @@ file using nxhtml-mode."
             )))
 
 (defun nxhtml-say-welcome-unless-skip ()
-  (unless (nxhtml-skip-welcome)
-    (nxhtml-welcome)))
+  (condition-case err
+      (unless (nxhtml-skip-welcome)
+        (nxhtml-welcome))
+    (error (message "ERROR nxhtml-say-welcome-unless-skip: %s" err))))
 
 ;; Show welcome screen once after loading nxhtml:
-(eval-after-load 'nxhtml
-  ;; Use a short delay if something like desktop is used:
-  '(run-with-idle-timer 0.5 nil 'nxhtml-say-welcome-unless-skip))
+;;(unless (boundp 'bytecomp-filename)
+(eval-when '(load)
+  (eval-after-load 'nxhtml
+    ;; Use a short delay if something like desktop is used:
+    '(run-with-idle-timer 0.5 nil 'nxhtml-say-welcome-unless-skip)))
 
 (provide 'nxhtml-menu)
 

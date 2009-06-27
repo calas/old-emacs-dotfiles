@@ -44,7 +44,7 @@
 ;;
 ;;; Code:
 
-(require 'udev)
+(eval-when-compile (require 'udev))
 
 (defgroup udev-rinari nil
   "Customization group for udev-rinari."
@@ -60,6 +60,7 @@
   :type '(choice (const :tag "Don't load Rinari" nil)
                  (const :tag "Load Rinari" t))
   :set (lambda (sym val)
+         (set-default sym val)
          (when val
            (let* ((base-dir  (expand-file-name "svn/trunk/" udev-rinari-dir))
                   (rhtml-dir (expand-file-name "rhtml/" base-dir))
@@ -71,8 +72,7 @@
              (add-to-list 'load-path rhtml-dir)
              (add-to-list 'load-path test-dir))
            (require 'rinari)
-           (require 'ruby-mode))
-         (set-default sym val))
+           (require 'ruby-mode)))
   :group 'udev-rinari)
 
 (defvar udev-rinari-steps
@@ -82,11 +82,11 @@
     ;;udev-rinari-install
     ))
 
+(defvar udev-rinari-update-buffer nil)
+
 (defun udev-rinari-buffer-name (mode)
   "Return a name for current compilation buffer ignoring MODE."
   (udev-buffer-name " *Updating Rinari %s*" udev-rinari-update-buffer mode))
-
-(defvar udev-rinari-update-buffer nil)
 
 (defun udev-rinari-check-conflicts ()
   "Check if Rinari and ruby-mode already loaded and from where.
@@ -126,6 +126,7 @@ Give an error if they are loaded from somewhere else than
                                  (customize-group-other-window 'udev-rinari)))
         (insert " Setup to load Rinari from fetched sources when starting Emacs.")))))
 
+;;;###autoload
 (defun udev-rinari-update ()
   "Fetch and install Rinari from the devel sources.
 To determine where to store the sources and how to start rinari
@@ -153,6 +154,7 @@ see `udev-rinari-dir' and `udev-rinari-load-rinari'."
       (setq udev-rinari-fetch-buffer (current-buffer)))))
 
 (defvar udev-rinari-diff-file nil)
+(defvar udev-rinari-fetch-diff-buffer nil)
 
 (defun udev-rinari-fetch-diff (log-buffer)
   "Fetch diff between local Rinari sources and dev repository."
@@ -170,8 +172,6 @@ see `udev-rinari-dir' and `udev-rinari-load-rinari'."
                    'udev-rinari-buffer-name)
                 (setq udev-continue-on-error-function 'udev-cvs-diff-continue)
                 (current-buffer)))))))
-
-(defvar udev-rinari-fetch-diff-buffer nil)
 
 (defun udev-rinari-check-diff (log-buffer)
   "Check output from svn diff command for merge conflicts."
