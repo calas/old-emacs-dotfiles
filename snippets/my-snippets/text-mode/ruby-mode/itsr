@@ -1,0 +1,4 @@
+#name : it { should route('/route').to(:attribute) }
+# --
+it { should route(:${1:get}, "/${2:route}").to(:action => :${3:action}) }
+itsr$0

@@ -1,0 +1,4 @@
+#name : it { should route(:method, path).to(:attributes) }
+# --
+it { should route(:${1:method}, "${2:path}").to(:${3:attributes}) }
+itr$0

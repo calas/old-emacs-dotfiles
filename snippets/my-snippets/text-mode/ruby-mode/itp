@@ -1,0 +1,4 @@
+#name : it 'pending'
+# --
+it 'debe ${1:hacer algo}'
+itp$0
