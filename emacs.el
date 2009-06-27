@@ -252,8 +252,6 @@
 ;; rinari
 ;; http://github.com/eschulte/rinari
 (require 'rinari)
-;; (require 'rinari-camps)
-;; (require 'rinari-merb)
 
 (global-set-key (kbd "C-x C-M-f") 'rinari-find-file-in-project)
 (setq rinari-browse-url-func 'browse-url-generic)
@@ -469,20 +467,6 @@
 (add-to-list 'auto-mode-alist '("srm\\.conf\\'"    . apache-mode))
 (add-to-list 'auto-mode-alist '("access\\.conf\\'" . apache-mode))
 (add-to-list 'auto-mode-alist '("sites-\\(available\\|enabled\\)/" . apache-mode))
-
-(defun rinari-merb-generate-tags()
-  (interactive)
-  (let ((my-tags-file (concat (rinari-merb-root) "TAGS"))
-	(root (rinari-merb-root)))
-    (message "Regenerating TAGS file: %s" my-tags-file)
-    (if (file-exists-p my-tags-file)
-	(delete-file my-tags-file))
-    (shell-command
-     (format "find %s -regex \".+rb$\" | xargs ctags-exuberant -a -e -f %s"
-	     root my-tags-file))
-    (if (get-file-buffer my-tags-file)
-	 (kill-buffer (get-file-buffer my-tags-file)))
-    (visit-tags-table my-tags-file)))
 
 (defun rinari-generate-tags()
   (interactive)
