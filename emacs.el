@@ -169,6 +169,7 @@
 (add-to-list 'load-path "~/.emacs.d/elisp/distel/elisp")
 (add-to-list 'load-path "~/.emacs.d/elisp/org-mode/lisp")
 (add-to-list 'load-path "~/.emacs.d/elisp/org-mode/contrib/lisp")
+(add-to-list 'load-path "~/.emacs.d/elisp/textmate.el")
 ;; (add-to-list 'load-path "~/.emacs.d/elisp/rcodetools)
 ;; add more here as needed
 
@@ -420,6 +421,10 @@
 ;; rcodetools
 ;; http://eigenclass.org/hiki/rcodetools
 ;; (require 'rcodetools)
+
+;; textmate minor mode
+;; (require 'textmate)
+;; (textmate-mode)
 
 ;; keep scrolling in compilation result buffer
 (setq compilation-scroll-output t)
