@@ -550,6 +550,14 @@
 (add-to-list 'auto-mode-alist '("\.gbl$" . shell-script-mode))
 (add-to-list 'auto-mode-alist '("defaulttab" . shell-script-mode))
 
+;; Setting tab-width to 4 spaces
+(setq tab-width 4)
+
+;; Setting tab-width to 2 spaces in ruby-mode
+(add-hook 'ruby-mode-hook (lambda () (setq tab-width 2)))
+
+(setq debug-on-error nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; CUSTOMIZATIONS FILE ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
