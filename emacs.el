@@ -268,6 +268,7 @@
 (add-to-list 'auto-mode-alist '("\.builder$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.thor$" . ruby-mode))
 (add-to-list 'auto-mode-alist '("\.autotest$" . ruby-mode))
+(add-to-list 'auto-mode-alist '("\.rjs" . ruby-mode))
 
 ;; use exuberant-ctags
 ;;
