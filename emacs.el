@@ -502,7 +502,7 @@
 (defun haml-convert-rhtml-file (rhtmlFile hamlFile)
   "Convierte un fichero rhtml en un haml y abre un nuevo buffer"
   (interactive "fSelect rhtml file: \nFSelect output (haml) file: ")
-  (let ((comando (concat "/usr/bin/html2haml -r "
+  (let ((comando (concat "/usr/local/bin/html2haml -r "
                          rhtmlFile
                          " "
                          hamlFile)))
@@ -512,13 +512,13 @@
 (defun haml-convert-region (beg end)
   "Convierte la región seleccionada a código haml"
   (interactive "r")
-  (let ((comando "/usr/bin/html2haml -r -s"))
+  (let ((comando "/usr/local/bin/html2haml -r -s"))
   (shell-command-on-region beg end comando (buffer-name) t)))
 
 (defun haml-to-html-region (beg end)
   "Convierte la región seleccionada a código html"
   (interactive "r")
-  (let ((comando "/usr/bin/haml -s -c"))
+  (let ((comando "/usr/local/bin/haml -s -c"))
   (shell-command-on-region beg end comando (buffer-name) t)))
 
 
@@ -526,15 +526,14 @@
   "Convierte el buffer seleccionado a código haml"
   (interactive)
   (let ((nuevoarchivo
-   (replace-regexp-in-string "r?html\\(.erb\\)?$" "haml"
-         (buffer-file-name))))
+	 (replace-regexp-in-string "erb$" "haml" (buffer-file-name))))
      (haml-convert-region (point-min) (point-max))
      (write-file nuevoarchivo)))
 
 (defun sass-convert-region (beg end)
   "Convierte la región seleccionada a código sass"
   (interactive "r")
-  (let ((comando "/usr/bin/css2sass -s"))
+  (let ((comando "/usr/local/bin/css2sass -s"))
   (shell-command-on-region beg end comando (buffer-name) t)))
 
 ;; Insert path
