@@ -4,32 +4,6 @@
 ;; Made By Jorge Calás Lozano.
 ;; Email   <calas@qvitta.net>
 ;;
-;; Emacs should be compiled from CVS in order to make it work correctly with
-;; nXhtml and ruby mode. At least in debian based, emacs-snapshot is broken.
-;;
-;; cvs -d:pserver:anonymous@cvs.sv.gnu.org:/sources/emacs co emacs
-;; cd emacs
-;;
-;; Read the INSTALL file
-;;
-;; Verify you have Xfonts support if you want pretty fonts and other
-;; dependencies: txinfo, libgif-dev, libxpm-dev (Images), libgpmg1-dev
-;; (Mouse Support)
-;;
-;; wajig install libxfont-dev libxfont1 txinfo libgif-dev libxpm-dev libgpmg1-dev
-;;
-;; ./configure
-;;
-;; make
-;; sudo make install
-;;
-;; Set Monospace font
-;;
-;; echo "Emacs.font: Monospace-10" >> ~/.Xresources
-;; xrdb -merge ~/.Xresources
-;;
-;; /usr/local/bin/emacs
-;; /usr/local/bin/emacsclient
 
 ;;;;;;;;;;;;;;;;;;
 ;; EMACS SERVER ;;
@@ -170,7 +144,7 @@
 (add-to-list 'load-path "~/.emacs.d/elisp/org-mode/lisp")
 (add-to-list 'load-path "~/.emacs.d/elisp/org-mode/contrib/lisp")
 (add-to-list 'load-path "~/.emacs.d/elisp/textmate.el")
-;; (add-to-list 'load-path "~/.emacs.d/elisp/rcodetools)
+(add-to-list 'load-path "~/.emacs.d/elisp/cucumber.el")
 ;; add more here as needed
 
 ;; org-mode
@@ -279,15 +253,14 @@
 (load "~/.emacs.d/elisp/nxhtml/autostart.el")
 (eval-after-load 'nxhtml
   '(define-key nxhtml-mode-map [f2] 'nxml-complete))
-(setq
- nxhtml-global-minor-mode nil
- mumamo-chunk-coloring 'submode-colored
- nxhtml-skip-welcome t
- ;; indent-region-mode t
- nxhtml-default-encoding "utf8"
- rng-nxml-auto-validate-flag nil
- ;; nxml-degraded t
- )
+(setq nxhtml-global-minor-mode nil
+      nxhtml-skip-welcome t
+      nxhtml-default-encoding "utf8"
+      rng-nxml-auto-validate-flag nil
+      ;; indent-region-mode t
+      ;; mumamo-chunk-coloring 'submode-colored
+      ;; nxml-degraded t
+      )
 (add-to-list 'auto-mode-alist '("\\.html\\.erb\\'" . eruby-nxhtml-mumamo-mode))
 
 ;; (setq mumamo-map
@@ -328,6 +301,7 @@
 (yas/load-directory "~/.emacs.d/snippets/contrib-snippets")
 (yas/load-directory "~/.emacs.d/snippets/yasnippets-rails/rails-snippets")
 (yas/load-directory "~/.emacs.d/snippets/my-snippets")
+
 
 ;; git-emacs
 ;; http://github.com/tsgates/git-emacs
@@ -468,6 +442,10 @@
 (add-to-list 'auto-mode-alist '("access\\.conf\\'" . apache-mode))
 (add-to-list 'auto-mode-alist '("sites-\\(available\\|enabled\\)/" . apache-mode))
 
+;; cucumber.el
+(autoload 'feature-mode "feature-mode" "Mode for editing cucumber files" t)
+(add-to-list 'auto-mode-alist '("\.feature$" . feature-mode))
+
 (defun rinari-generate-tags()
   (interactive)
   (let ((my-tags-file (concat (rinari-root) "TAGS"))
@@ -486,10 +464,8 @@
 (defun haml-convert-rhtml-file (rhtmlFile hamlFile)
   "Convierte un fichero rhtml en un haml y abre un nuevo buffer"
   (interactive "fSelect rhtml file: \nFSelect output (haml) file: ")
-  (let ((comando (concat "/usr/local/bin/html2haml -r "
-                         rhtmlFile
-                         " "
-                         hamlFile)))
+  (let
+      ((comando (concat "/usr/local/bin/html2haml -r " rhtmlFile " " hamlFile)))
     (shell-command comando)
     (find-file hamlFile)))
 
@@ -519,6 +495,14 @@
   (interactive "r")
   (let ((comando "/usr/local/bin/css2sass -s"))
   (shell-command-on-region beg end comando (buffer-name) t)))
+
+(defun sass-convert-buffer ()
+  "Convierte el buffer seleccionado a código sass"
+  (interactive)
+  (let ((nuevoarchivo
+	 (replace-regexp-in-string "css$" "sass" (buffer-file-name))))
+     (sass-convert-region (point-min) (point-max))
+     (write-file nuevoarchivo)))
 
 ;; Insert path
 (defun insert-path (file)
