@@ -4,7 +4,7 @@
 # This is a sample database file for the ActiveRecord and DataMapper ORMs
 development: &defaults
   adapter: mysql
-  database: ${1:merb_blog}_development
+  database: ${1:project_name}_development
   username: ${2:root}
   password: ${3:root}
   encoding: utf8
@@ -12,8 +12,8 @@ development: &defaults
 
 test:
   <<: *defaults
-  database: ${1:merb_blog}_test
+  database: ${1:project_name}_test
 
 production:
   <<: *defaults
-  database: ${1:merb_blog}_production
+  database: ${1:project_name}_production
