@@ -10,10 +10,8 @@
 ;;;;;;;;;;;;;;;;;;
 
 ;; Only start emacs-server it is not already started
-(when (and
-       (> emacs-major-version 22)
-       (or (not (boundp 'server-process))
-	   (not (eq (process-status server-process) 'listen))))
+(when (or (not (boundp 'server-process))
+	  (not (eq (process-status server-process) 'listen)))
   (server-start))
 
 ;; Set my data
@@ -532,3 +530,4 @@
 
 (setq custom-file "~/.emacs.d/customizations.el")
 (load custom-file 'noerror)
+
